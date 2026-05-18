@@ -30,7 +30,8 @@
 
 ### 2.1 MCP Tool/Resource Provider (인터페이스 제공자)
 MCP 프로토콜 규격을 준수하며, 에이전트에게 기능을 노출하는 컴포넌트이다.
-- **Tool Mapping**: 에이전트가 호출하는 `click`, `type` 등의 도구 이름을 내부 자동화 함수와 매핑한다.
+- **Tool Mapping**: 에이전트가 호출하는 `click`, `type` 등의 도구 이름을 내부 자동화 함수와 매핑한다. (상세 설계: [design/mcp_interface/tool_mapping.md](./design/mcp_interface/tool_mapping.md))
+
 - **Resource Exposure**: 현재 스크린샷이나 시스템 상태를 MCP 리소스(Resources) 형태로 에이전트에게 제공한다.
 - **Request/Response Handler**: RPC 요청의 파라미터를 검증하고, 실행 결과를 에이전트가 이해할 수 있는 형식으로 반환한다.
 
