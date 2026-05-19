@@ -43,7 +43,7 @@ MCP 프로토콜 규격을 준수하며, 에이전트에게 기능을 노출하�
 - **Execution Guard**: 명령 실행 중 발생할 수 있는 예외(예: 화면 해상도 변경, 권한 문제)를 처리하고 안정적인 실행을 보장한다.
 
 ### 2.3 Visual State Manager (비주얼 상태 관리자)
-시각적 데이터를 캡처하고 관리하여 에이전트와 모니터링 서비스에 전달한다.
+시각적 데이터를 캡처하고 관리하여 에이전트와 모니터링 서비스에 전달한다. (상세 설계: [design/visual_state_manager.md](./design/visual_state_manager.md))
 - **Capture Engine**: 기존 스크린샷 라이브러리나 가상 디스플레이 API를 사용하여 현재 화면 데이터를 추출한다.
 - **Format Converter**: 추출된 데이터를 MCP 리소스용 이미지 데이터 또는 스트리밍용 인코딩 데이터로 변환한다.
 
