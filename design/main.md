@@ -52,6 +52,12 @@ MCP 에이전트와 별개로, 사용자가 시스템을 관찰할 수 있는 �
 - **Web/VNC Streamer**: `Visual State Manager`로부터 받은 데이터를 웹(WebSocket)이나 VNC 프로토콜로 중계한다.
 - **External Interface**: 에이전트의 동작을 실시간으로 시각화하여 사용자에게 제공하는 인터페이스를 유지한다.
 
+### 2.5 Configuration Manager (설정 관리자)
+시스템 전체의 설정을 중앙 집중식으로 관리한다.
+- **Centralized Configuration**: 모든 컴포넌트의 설정을 한곳에서 통합 관리한다.
+- **File-based Persistence**: 파일 시스템의 설정 파일을 기반으로 동작하며, 파일 직접 수정을 통한 설정 변경을 지원한다.
+- **Remote Configuration**: `Monitoring Bridge`를 통해 원격에서 설정을 수정할 수 있는 인터페이스를 제공한다.
+
 ---
 
 ## 3. 컴포넌트 간 상호작용 (Component Interaction)
