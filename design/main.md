@@ -37,7 +37,7 @@ MCP 프로토콜 규격을 준수하며, 에이전트에게 기능을 노출하�
 - **Request/Response Handler**: RPC 요청의 파라미터를 검증하고, 실행 결과를 에이전트가 이해할 수 있는 형식으로 반환한다.
 
 ### 2.2 Automation Wrapper (자동화 래퍼)
-기존 자동화 도구를 MCP 환경에 맞게 최적화하여 사용하는 핵심 로직 계층이다.
+기존 자동화 도구를 MCP 환경에 맞게 최적화하여 사용하는 핵심 로직 계층이다. (상세 설계: [design/automation_wrapper.md](./design/automation_wrapper.md))
 - **Library Integration**: `pyautogui`나 OS 레벨의 자동화 API를 호출하여 실제 동작을 수행한다.
 - **Coordinate Transformer**: 에이전트가 사용하는 논리적 좌표를 실제 디스플레이 해상도 및 스크린 좌표계에 맞게 변환한다.
 - **Execution Guard**: 명령 실행 중 발생할 수 있는 예외(예: 화면 해상도 변경, 권한 문제)를 처리하고 안정적인 실행을 보장한다.

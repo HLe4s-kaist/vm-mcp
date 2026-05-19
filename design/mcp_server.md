@@ -24,6 +24,18 @@ MCP Server는 에이전트의 요청을 수신하여 실행 명령(Tools) 또는
 - **Data Source Adapter**: `Visual State Manager`나 시스템 로그 등 외부 데이터 소스로부터 원시 데이터(Raw Data)를 가져오는 어댑터이다.
 - **Format Encoder**: 가져온 원시 데이터를 MCP 리소스 규격(예: Base64 인코딩된 이미지, 텍스트)으로 변환하여 에이전트가 즉시 사용할 수 있게 만든다.
 
+### 2.4 외부 계층 상호작용 인터페이스 (External Layer Interaction Interface)
+`Automation Wrapper`와의 논리적 연결을 정의한다.
+
+#### 도구 실행 위임 (Tool Execution Delegation)
+- **상호작용 주체**: `MCP Server` (`Execution Bridge`) $\leftrightarrow$ `Automation Wrapper` (`Command Orchestrator`)
+- **상호작용 성격**: 
+    - `MCP Server`는 에이전트로부터 수신한 유효한 명령을 `Automation Wrapper`에 **위임**한다.
+    - `Automation Wrapper`는 명령 수행 후 그 **결과(상태 및 데이터)**를 `MCP Server`에 보고한다.
+- **데이터 흐름**:
+    - **위임 데이터**: 구조화된 명령 정보 및 실행 컨텍스트.
+    - **반환 데이터**: 명령의 성공/실패 여부, 실행 결과 데이터, 예외 발생 시의 진단 정보.
+
 ## 3. 컴포넌트 간 상호작용 (Inter-component Interaction)
 
 ### 3.1 도구 호출 흐름 (Tool Call Flow)
