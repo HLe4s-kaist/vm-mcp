@@ -99,12 +99,13 @@ class MCPServer:
             return str(res)
 
         @self.mcp.tool(name="type")
-        def type_text(text: str) -> str:
+        def type_text(text: str, mode: str = "auto") -> str:
             """
-            Type the specified text string on the keyboard at the current cursor focus.
-            text: string to type
+            Type or paste the specified text string on the keyboard.
+            text: string to type or paste
+            mode: 'auto' (automatic detection), 'keyboard' (keystroke emulation), or 'paste' (clipboard paste)
             """
-            res = self.automation.execute_command("type", text=text)
+            res = self.automation.execute_command("type", text=text, mode=mode)
             return str(res)
 
         @self.mcp.tool(name="press")

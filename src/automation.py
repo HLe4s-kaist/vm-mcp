@@ -116,9 +116,32 @@ class AutomationWrapper:
         pyautogui.scroll(int(clicks))
         return {"clicks": clicks}
 
-    def _action_type(self, text, interval=0.01):
-        pyautogui.write(text, interval=interval)
-        return {"length": len(text)}
+    def _action_type(self, text, interval=0.01, mode="auto"):
+        # mode can be "keyboard", "paste", or "auto"
+        is_ascii = all(ord(c) < 128 for c in text)
+        if mode == "paste" or (mode == "auto" and (not is_ascii or len(text) > 15 or "\n" in text)):
+            import pyperclip
+            old_clipboard = ""
+            try:
+                old_clipboard = pyperclip.paste()
+            except Exception:
+                pass
+            
+            try:
+                pyperclip.copy(text)
+                time.sleep(0.05)  # Wait for clipboard registration
+                pyautogui.hotkey('ctrl', 'v')
+                time.sleep(0.05)  # Wait for paste operation to complete
+                return {"method": "paste", "length": len(text)}
+            finally:
+                try:
+                    if old_clipboard:
+                        pyperclip.copy(old_clipboard)
+                except Exception:
+                    pass
+        else:
+            pyautogui.write(text, interval=interval)
+            return {"method": "keyboard", "length": len(text)}
 
     def _action_press(self, key):
         # key can be single key or list of keys to press sequentially (e.g. 'enter', ['ctrl', 'c'])
