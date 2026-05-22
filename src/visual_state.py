@@ -12,6 +12,11 @@ import threading
 from PIL import Image
 import pyautogui
 
+try:
+    import mss
+except ImportError:
+    mss = None
+
 # Set pyautogui safety setting
 pyautogui.FAILSAFE = True
 
@@ -36,9 +41,15 @@ class VisualStateManager:
                 return self.cache[-1][2]
             
             try:
-                # Capture screen using pyautogui (returns PIL Image)
-                # Ensure DISPLAY is set before calling this in the runner process
-                img = pyautogui.screenshot()
+                # Capture screen using mss if available (much faster than pyautogui/scrot), fallback to pyautogui
+                if mss:
+                    with mss.mss() as sct:
+                        # sct.monitors[1] is the first active monitor, sct.monitors[0] is the bounding box of all monitors
+                        monitor = sct.monitors[1] if len(sct.monitors) > 1 else sct.monitors[0]
+                        sct_img = sct.grab(monitor)
+                        img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+                else:
+                    img = pyautogui.screenshot()
                 self.last_capture_time = now
                 
                 # Manage cache
