@@ -137,11 +137,11 @@ python3 src/main.py --mcp-transport sse --mcp-port 8001
 *참고*: `192.168.183.135` 부분에 실제 구동되고 있는 외부 VM 서버의 IP 주소를 적어 연결합니다. DNS Rebinding Protection 및 CORS 제약은 서버 내부적으로 보안 완화(`*`) 처리되어 있어 즉각적인 외부 연동이 가능합니다.
 
 ##### 3) 주요 통신 호환성 개선 (Monkeypatch)
-일부 MCP 클라이언트 SDK가 규격서상의 메시지 포스팅 경로(예: `/messages/`)를 따르지 않고, 최초 접속 경로인 `/sse` 자체로 직접 메시지 전송 및 세션 해제를 시도하여 `405 Method Not Allowed` 오류를 유발하는 현상이 있습니다.
-본 서버는 내부적으로 스타렛(Starlette)의 `/sse` 라우팅을 자동 몽키 패칭하여 다음과 같은 개선 사항을 제공합니다.
+일부 MCP 클라이언트 SDK가 규격서상의 메시지 포스팅 경로(예: `/messages/`)를 따르지 않고 최초 접속 경로인 `/sse` 자체로 요청하거나, CORS preflight 및 OAuth 보안 단계를 수행하여 연결이 끊어지는 호환성 이슈가 있습니다. 본 서버는 스타렛(Starlette) 앱과 `SseServerTransport`를 자동 몽키 패칭하여 다음과 같은 완벽한 호환성을 제공합니다.
+- **OAuth Discovery 200 OK 응답**: 최신 Claude Desktop 등 일부 클라이언트는 연결 전 `GET /.well-known/oauth-protected-resource` 및 `/sse` 경로를 조회하여 인증 서버 규격을 테스트합니다. 서버는 404 대신 성공 응답(`200 OK`, 빈 JSON `{}`)을 즉시 제공하여 클라이언트가 비정상 중단하지 않고 정상적으로 SSE 스트림을 수립하도록 돕습니다.
 - **`POST /sse?session_id=...` 및 `POST /sse` (session_id 누락)**: `/messages/` 하위 앱의 메시지 핸들러로 자동 포워딩합니다. 특히 클라이언트가 `session_id`를 생략한 채 요청을 전송한 경우에도, 서버 내부에 수립된 활성 에이전트 세션의 UUID를 자동으로 탐색 및 주입(Fallback Mapping)하여 `400 Bad Request` 오류 없이 안전한 도구/리소스 실행을 처리합니다.
-- **`DELETE /sse?session_id=...` 및 `DELETE /sse` (session_id 누락)**: 사용 중이던 SSE 세션의 메모리 스트림을 안전하고 즉각적으로 해제(Clean-up)하여 메모리 누수를 방지하고 `202 Accepted`를 응답합니다. (session_id가 결여된 경우에도 활성 세션을 파악해 자동 닫음 처리)
-- **`OPTIONS /sse`**: CORS Preflight 요청에 대해 적절한 헤더를 반환하여 크로스 도메인 웹브라우저 클라이언트 환경에서도 문제없이 연동됩니다.
+- **세션 자동 정리 및 메모리 누수 방지 (Stale Session Cleanup)**: 에이전트 연결이 끊어지거나 종료(Context manager exit)되면, 활성 세션 맵에서 해당 `session_id`를 즉시 제거(pop)합니다. 이로 인해 끊어진 죽은 세션으로 POST가 흘러가는 현상을 원천적으로 방지합니다.
+- **CORS `OPTIONS` Preflight 완벽 대응**: 브라우저나 크로스 오리진 샌드박스 환경의 클라이언트가 `/messages/` 및 `/sse` 경로로 OPTIONS 요청을 보낼 때, JSON-RPC validation 에러 없이 CORS 승인 헤더와 함께 즉각적인 `200/204` 응답을 리턴하도록 패치하여 연결이 거부되지 않도록 설계했습니다.
 
 ##### 4) 파이썬 SSE 클라이언트 연동 검증 스크립트
 외부 PC에서 실제로 SSE 연결을 수립하고 MCP 도구(`get_screen_metadata` 등)를 올바르게 호출하는지 직접 검증해볼 수 있는 파이썬 테스트 클라이언트를 제공합니다.
@@ -178,7 +178,11 @@ python3 src/main.py --mcp-transport sse --mcp-port 8001
     ```
 
 - **Q3. 서버 로그에 `GET /.well-known/oauth-protected-resource HTTP/1.1 404 Not Found` 경고가 찍힙니다.**
-  - **A**: 이는 일부 클라이언트(예: 최신 Claude Desktop)가 OAuth 자원 인식을 위해 기본적으로 조회를 시도하는 경로입니다. 본 MCP 서버에서는 OAuth 인증이 필요 없으므로 404를 반환하며, 이는 실제 도구 호출 및 연동 기능 동작에 아무런 영향을 주지 않는 지극히 정상적인 상태입니다. 안심하셔도 좋습니다.
+  - **A**: 과거 버전에서는 404 Not Found로 무시했으나, 최신 클라이언트(Claude Desktop 등) 중 일부는 이 응답을 받고 연결 단계를 강제 종료하는 증상이 발견되었습니다. 현재는 이 경로에 대해 더미 `200 OK` 및 빈 JSON `{}` 응답을 반환하도록 몽키 패치가 보완되어 있으므로, 404로 인한 연결 차단 문제가 해결되었습니다.
+
+- **Q4. 서버를 재시작한 후 클라이언트 에이전트에서 400 Bad Request가 발생하거나 연결이 안 됩니다.**
+  - **A**: **클라이언트 에이전트 프로그램(Claude Desktop, Cursor 등)을 반드시 재시작해야 합니다.**
+  - 클라이언트는 이전 연결 단계에서 할당받은 일회성 `session_id`를 로컬에 캐싱해두고 POST 요청을 계속 보냅니다. 서버가 재시작되면 해당 세션은 완전히 증발하므로, 클라이언트가 새 세션을 맺도록 클라이언트 앱을 완전히 종료했다가 다시 켜주셔야 합니다. (이때 서버 측은 이전 세션 POST에 대해 친절한 400 Bad Request 안내 메시지를 출력합니다)
 
 ##### 6) SSE 서버 및 호환성 몽키패치 검증 테스트
 서버 상에서 SSE 포트, CORS preflight 및 `/sse` 경로로 직접 들어오는 POST/DELETE 포워딩 호환성이 정상적으로 작동하는지 검증하는 단위 테스트를 제공합니다.

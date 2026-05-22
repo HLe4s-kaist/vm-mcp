@@ -110,11 +110,19 @@ class VisualStateManager:
         try:
             # Get physical/logical resolution
             width, height = pyautogui.size()
+            
+            display_env = False
+            if hasattr(pyautogui, "getActiveWindow"):
+                try:
+                    display_env = pyautogui.getActiveWindow() is not None
+                except Exception:
+                    pass
+
             return {
                 "width": width,
                 "height": height,
                 "timestamp": time.time(),
-                "display_env": pyautogui.getActiveWindow() is not None  # checks if GUI env active
+                "display_env": display_env
             }
         except Exception as e:
             logging.error(f"Error reading screen metadata: {e}")

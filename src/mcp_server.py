@@ -9,6 +9,63 @@ import sys
 import logging
 from mcp.server.fastmcp import FastMCP
 
+# Global registry to track all instantiated SseServerTransport objects.
+# This bypasses Starlette's routing/middleware boundaries when resolving active session writers.
+active_transports = []
+try:
+    from mcp.server.sse import SseServerTransport
+    from contextlib import asynccontextmanager
+
+    # 1. Patch __init__ to track transports
+    original_sse_init = SseServerTransport.__init__
+    def patched_sse_init(self, *args, **kwargs):
+        original_sse_init(self, *args, **kwargs)
+        active_transports.append(self)
+        logging.info(f"[MCP SSE] Tracked new SseServerTransport instance: {self}")
+    SseServerTransport.__init__ = patched_sse_init
+
+    # 2. Patch connect_sse to clean up dead sessions from _read_stream_writers on exit
+    original_connect_sse = SseServerTransport.connect_sse
+    @asynccontextmanager
+    async def patched_connect_sse(self, scope, receive, send):
+        pre_keys = set(self._read_stream_writers.keys())
+        session_id = None
+        try:
+            async with original_connect_sse(self, scope, receive, send) as streams:
+                post_keys = set(self._read_stream_writers.keys())
+                new_keys = post_keys - pre_keys
+                if new_keys:
+                    session_id = list(new_keys)[0]
+                    logging.info(f"[MCP SSE Patch] Intercepted new session: {session_id.hex}")
+                yield streams
+        finally:
+            if session_id:
+                self._read_stream_writers.pop(session_id, None)
+                logging.info(f"[MCP SSE Patch] Cleaned up session: {session_id.hex}")
+    SseServerTransport.connect_sse = patched_connect_sse
+
+    # 3. Patch handle_post_message to intercept OPTIONS preflights
+    original_handle_post = SseServerTransport.handle_post_message
+    async def patched_handle_post(self, scope, receive, send):
+        if scope["type"] == "http" and scope.get("method") == "OPTIONS":
+            from starlette.responses import Response
+            response = Response(
+                status_code=204,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE",
+                    "Access-Control-Allow-Headers": "*",
+                }
+            )
+            await response(scope, receive, send)
+            return
+        await original_handle_post(self, scope, receive, send)
+    SseServerTransport.handle_post_message = patched_handle_post
+
+    logging.info("[MCP SSE] Successfully applied all SseServerTransport monkey patches")
+except Exception as e:
+    logging.error(f"[MCP SSE] Failed to patch SseServerTransport: {e}")
+
 class MCPServer:
     def __init__(self, config_manager, visual_state_manager, automation_wrapper):
         self.config = config_manager
@@ -197,6 +254,8 @@ class MCPServer:
             # Monkey patch sse_app to:
             # 1. Add Starlette CORSMiddleware
             # 2. Support POST and DELETE methods directly on the /sse endpoint (fixes 405 Method Not Allowed)
+            # 3. Handle session_id-less POST/DELETE gracefully via global transports list fallback
+            # 4. Integrate RequestLoggingMiddleware for transparent debugging
             original_sse_app = self.mcp.sse_app
             def patched_sse_app(*args, **kwargs):
                 app = original_sse_app(*args, **kwargs)
@@ -221,43 +280,57 @@ class MCPServer:
                         
                         if post_message_app:
                             async def wrapped_endpoint(request):
+                                # Helper to locate the active session writer from globally tracked SseServerTransport objects
+                                def get_active_session():
+                                    for t in reversed(active_transports):
+                                        if hasattr(t, "_read_stream_writers") and t._read_stream_writers:
+                                            writers = t._read_stream_writers
+                                            if writers:
+                                                session_id = list(writers.keys())[-1]
+                                                return t, session_id, writers.get(session_id)
+                                    return None, None, None
+
                                 if request.method == "POST":
                                     session_id_param = request.query_params.get("session_id")
                                     if not session_id_param:
                                         # Auto-resolve and inject active session_id if missing
-                                        sse_transport = getattr(post_message_app, "__self__", None)
-                                        if sse_transport and hasattr(sse_transport, "_read_stream_writers"):
-                                            writers = sse_transport._read_stream_writers
-                                            if writers:
-                                                target_session_id = list(writers.keys())[-1]
-                                                request.scope["query_string"] = f"session_id={target_session_id.hex}".encode('utf-8')
-                                                logging.info(f"Auto-mapped session_id-less POST to session {target_session_id}")
-                                            else:
-                                                logging.warning("Received POST request without session_id and no active SSE session exists.")
+                                        _, target_session_id, _ = get_active_session()
+                                        if target_session_id:
+                                            request.scope["query_string"] = f"session_id={target_session_id.hex}".encode('utf-8')
+                                            logging.info(f"[MCP SSE App] Auto-mapped session_id-less POST to session {target_session_id.hex}")
+                                        else:
+                                            logging.warning("[MCP SSE App] Received POST request without session_id and no active SSE session exists.")
+                                            # Return friendly 400 Bad Request instructing the user/client to restart
+                                            return Response(
+                                                "Bad Request: No active SSE session found. Please establish a GET /sse connection first, or restart your client agent to refresh the session.",
+                                                status_code=400,
+                                                media_type="text/plain"
+                                            )
                                     # Forward to post_message_app
                                     await post_message_app(request.scope, request.receive, request._send)
                                     return NullResponse()
                                 elif request.method == "DELETE":
                                     session_id_param = request.query_params.get("session_id")
-                                    sse_transport = getattr(post_message_app, "__self__", None)
-                                    if not session_id_param and sse_transport and hasattr(sse_transport, "_read_stream_writers"):
-                                        writers = sse_transport._read_stream_writers
-                                        if writers:
-                                            target_session_id = list(writers.keys())[-1]
-                                            session_id_param = target_session_id.hex
+                                    transport, target_session_id, writer = get_active_session()
+                                    if not session_id_param and target_session_id:
+                                        session_id_param = target_session_id.hex
                                     if session_id_param:
                                         try:
                                             from uuid import UUID
                                             session_id = UUID(hex=session_id_param)
-                                            # Get the bound transport class instance to clear writers
-                                            if sse_transport and hasattr(sse_transport, "_read_stream_writers"):
-                                                writer = sse_transport._read_stream_writers.get(session_id)
-                                                if writer:
-                                                    await writer.aclose()
-                                                    sse_transport._read_stream_writers.pop(session_id, None)
-                                                    logging.info(f"Cleaned up SSE session {session_id} via DELETE request")
+                                            # Find matching writer manually across transports if needed
+                                            if not writer:
+                                                for t in active_transports:
+                                                    if hasattr(t, "_read_stream_writers") and session_id in t._read_stream_writers:
+                                                        transport = t
+                                                        writer = t._read_stream_writers[session_id]
+                                                        break
+                                            if writer and transport:
+                                                await writer.aclose()
+                                                transport._read_stream_writers.pop(session_id, None)
+                                                logging.info(f"[MCP SSE App] Cleaned up SSE session {session_id} via DELETE request")
                                         except Exception as e:
-                                            logging.error(f"Error handling DELETE for session {session_id_param}: {e}")
+                                            logging.error(f"[MCP SSE App] Error handling DELETE for session {session_id_param}: {e}")
                                     return Response("Accepted", status_code=202)
                                 return await original_endpoint(request)
                             
@@ -267,7 +340,24 @@ class MCPServer:
                                 endpoint=wrapped_endpoint,
                                 methods=["GET", "POST", "DELETE", "OPTIONS"]
                             )
-                
+                from starlette.responses import JSONResponse
+                from starlette.routing import Route
+
+                # Add dummy endpoints for oauth protection discovery
+                async def oauth_dummy_endpoint(request):
+                    logging.info(f"[MCP SSE OAuth Dummy] Responding 200 OK to {request.method} {request.url.path}")
+                    return JSONResponse(
+                        {},
+                        headers={
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Methods": "GET, OPTIONS",
+                            "Access-Control-Allow-Headers": "*",
+                        }
+                    )
+
+                app.routes.append(Route("/.well-known/oauth-protected-resource", oauth_dummy_endpoint, methods=["GET", "OPTIONS"]))
+                app.routes.append(Route("/.well-known/oauth-protected-resource/sse", oauth_dummy_endpoint, methods=["GET", "OPTIONS"]))
+
                 from starlette.middleware.cors import CORSMiddleware
                 app.add_middleware(
                     CORSMiddleware,
@@ -276,6 +366,32 @@ class MCPServer:
                     allow_methods=["*"],
                     allow_headers=["*"],
                 )
+                
+                # Add HTTP Request Logging Middleware for transparent connection state visibility
+                class RequestLoggingMiddleware:
+                    def __init__(self, app):
+                        self.app = app
+                    async def __call__(self, scope, receive, send):
+                        if scope["type"] == "http":
+                            method = scope.get("method", "UNKNOWN")
+                            path = scope.get("path", "UNKNOWN")
+                            query = scope.get("query_string", b"").decode("utf-8")
+                            client = scope.get("client", None)
+                            client_ip = client[0] if client else "unknown"
+                            logging.info(f"[MCP SSE HTTP Log] Incoming request: {method} {path}?{query} from {client_ip}")
+                            
+                            async def log_send(message):
+                                if message["type"] == "http.response.start":
+                                    status = message.get("status", "unknown")
+                                    logging.info(f"[MCP SSE HTTP Log] Responded: {method} {path} -> Status {status}")
+                                await send(message)
+                                
+                            await self.app(scope, receive, log_send)
+                        else:
+                            await self.app(scope, receive, send)
+                            
+                app.add_middleware(RequestLoggingMiddleware)
+                
                 return app
             self.mcp.sse_app = patched_sse_app
                 

@@ -155,6 +155,59 @@ def test_sse_monkeypatch():
             print(f"ERROR during active session auto-mapping test: {e}")
             return False
 
+        # 6. Test OAuth Discovery endpoints
+        print("Testing OAuth Discovery endpoints...")
+        for path in ("/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/sse"):
+            # Test GET
+            req_oauth_get = urllib.request.Request(
+                f"http://127.0.0.1:{port}{path}",
+                method="GET"
+            )
+            try:
+                with urllib.request.urlopen(req_oauth_get) as resp:
+                    print(f"OAuth GET {path} Response code: {resp.getcode()}")
+                    body = json.loads(resp.read().decode("utf-8"))
+                    assert body == {}
+                    print(f"OK: OAuth GET {path} returned 200 and empty JSON.")
+            except Exception as e:
+                print(f"ERROR: OAuth GET {path} failed: {e}")
+                return False
+
+            # Test OPTIONS
+            req_oauth_options = urllib.request.Request(
+                f"http://127.0.0.1:{port}{path}",
+                method="OPTIONS"
+            )
+            req_oauth_options.add_header("Origin", "http://example.com")
+            req_oauth_options.add_header("Access-Control-Request-Method", "GET")
+            try:
+                with urllib.request.urlopen(req_oauth_options) as resp:
+                    print(f"OAuth OPTIONS {path} Response code: {resp.getcode()}")
+                    headers = dict(resp.info())
+                    assert "access-control-allow-origin" in headers or "Access-Control-Allow-Origin" in headers
+                    print(f"OK: OAuth OPTIONS {path} CORS preflight allowed.")
+            except Exception as e:
+                print(f"ERROR: OAuth OPTIONS {path} failed: {e}")
+                return False
+
+        # 7. Test OPTIONS /messages/
+        print("Testing OPTIONS on message endpoint...")
+        req_msg_options = urllib.request.Request(
+            f"http://127.0.0.1:{port}/messages/",
+            method="OPTIONS"
+        )
+        req_msg_options.add_header("Origin", "http://example.com")
+        req_msg_options.add_header("Access-Control-Request-Method", "POST")
+        try:
+            with urllib.request.urlopen(req_msg_options) as resp:
+                print(f"OPTIONS /messages/ Response code: {resp.getcode()}")
+                headers = dict(resp.info())
+                assert "access-control-allow-origin" in headers or "Access-Control-Allow-Origin" in headers
+                print("OK: OPTIONS /messages/ CORS preflight allowed.")
+        except Exception as e:
+            print(f"ERROR: OPTIONS /messages/ failed: {e}")
+            return False
+
     finally:
         print("Terminating server...")
         proc.terminate()

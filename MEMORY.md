@@ -13,6 +13,9 @@
 - [x] README.md 에 외부 에이전트 SSE 연동 및 몽키 패치 설명 가이드 업데이트 완료 (Task 10)
 - [x] session_id 누락 클라이언트 대응 활성 세션 자동 매핑 폴백 구현 및 테스트 완료 (Task 11)
 - [x] 외부 SSE 에이전트 연동을 위한 상세 가이드 보완 및 실전 파이썬 테스트 클라이언트 스크립트 제공 완료 (Task 12)
+- [x] SSE 전역 세션 관리 안정화 및 상세 요청 로깅 미들웨어 장착 완료 (Task 13)
+- [x] OAuth 메타데이터 404 차단 해결 및 SSE 연결 수립 안정화 완료 (Task 14)
+- [x] SSE MCP 연결 장애 및 OAuth 404 차단 최종 해결, 세션 라이프사이클 안정화 및 README.md 가이드 보완 완료 (Task 15)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)
