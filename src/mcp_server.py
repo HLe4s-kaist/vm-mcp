@@ -194,10 +194,63 @@ class MCPServer:
                 self.mcp.settings.transport_security.allowed_hosts = ["*"]
                 self.mcp.settings.transport_security.allowed_origins = ["*"]
             
-            # Monkey patch sse_app to add CORS middleware for cross-origin client support (fixes 405 OPTIONS preflight errors)
+            # Monkey patch sse_app to:
+            # 1. Add Starlette CORSMiddleware
+            # 2. Support POST and DELETE methods directly on the /sse endpoint (fixes 405 Method Not Allowed)
             original_sse_app = self.mcp.sse_app
             def patched_sse_app(*args, **kwargs):
                 app = original_sse_app(*args, **kwargs)
+                
+                from starlette.responses import Response
+                class NullResponse(Response):
+                    async def __call__(self, scope, receive, send):
+                        pass
+                
+                # Locate handle_sse / sse_endpoint and sse transport reference inside the app
+                from starlette.routing import Route, Mount
+                for i, route in enumerate(app.routes):
+                    if isinstance(route, Route) and route.path == "/sse":
+                        original_endpoint = route.endpoint
+                        
+                        # Find the post_message_app mounted on '/messages' (might be '/messages/')
+                        post_message_app = None
+                        for r in app.routes:
+                            if isinstance(r, Mount) and r.path.startswith("/messages"):
+                                post_message_app = r.app
+                                break
+                        
+                        if post_message_app:
+                            async def wrapped_endpoint(request):
+                                if request.method == "POST":
+                                    # Forward to post_message_app
+                                    await post_message_app(request.scope, request.receive, request._send)
+                                    return NullResponse()
+                                elif request.method == "DELETE":
+                                    session_id_param = request.query_params.get("session_id")
+                                    if session_id_param:
+                                        try:
+                                            from uuid import UUID
+                                            session_id = UUID(hex=session_id_param)
+                                            # Get the bound transport class instance to clear writers
+                                            sse_transport = getattr(post_message_app, "__self__", None)
+                                            if sse_transport and hasattr(sse_transport, "_read_stream_writers"):
+                                                writer = sse_transport._read_stream_writers.get(session_id)
+                                                if writer:
+                                                    await writer.aclose()
+                                                    sse_transport._read_stream_writers.pop(session_id, None)
+                                                    logging.info(f"Cleaned up SSE session {session_id} via DELETE request")
+                                        except Exception as e:
+                                            logging.error(f"Error handling DELETE for session {session_id_param}: {e}")
+                                    return Response("Accepted", status_code=202)
+                                return await original_endpoint(request)
+                            
+                            # Replace route with updated methods and wrapped endpoint
+                            app.routes[i] = Route(
+                                "/sse",
+                                endpoint=wrapped_endpoint,
+                                methods=["GET", "POST", "DELETE", "OPTIONS"]
+                            )
+                
                 from starlette.middleware.cors import CORSMiddleware
                 app.add_middleware(
                     CORSMiddleware,

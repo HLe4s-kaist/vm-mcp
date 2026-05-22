@@ -136,8 +136,19 @@ python3 src/main.py --mcp-transport sse --mcp-port 8001
 ```
 *참고*: `192.168.183.135` 부분에 실제 구동되고 있는 외부 VM 서버의 IP 주소를 적어 연결합니다. DNS Rebinding Protection 및 CORS 제약은 서버 내부적으로 보안 완화(`*`) 처리되어 있어 즉각적인 외부 연동이 가능합니다.
 
-##### 3) SSE 서버 구동 검증 테스트
-서버 상에서 SSE 포트 및 엔드포인트 연결성이 유효한지 검증하기 위한 단위 테스트도 지원합니다.
+##### 3) 주요 통신 호환성 개선 (Monkeypatch)
+일부 MCP 클라이언트 SDK가 규격서상의 메시지 포스팅 경로(예: `/messages/`)를 따르지 않고, 최초 접속 경로인 `/sse` 자체로 직접 메시지 전송 및 세션 해제를 시도하여 `405 Method Not Allowed` 오류를 유발하는 현상이 있습니다.
+본 서버는 내부적으로 스타렛(Starlette)의 `/sse` 라우팅을 자동 몽키 패칭하여 다음과 같은 개선 사항을 제공합니다.
+- **`POST /sse?session_id=...`**: `/messages/` 하위 앱의 메시지 핸들러로 자동 포워딩하여 405 Method Not Allowed 없이 상호작용 처리가 가능합니다.
+- **`DELETE /sse?session_id=...`**: 사용 중이던 SSE 세션의 메모리 스트림을 안전하고 즉각적으로 해제(Clean-up)하여 메모리 누수를 방지하고 `202 Accepted`를 응답합니다.
+- **`OPTIONS /sse`**: CORS Preflight 요청에 대해 적절한 헤더를 반환하여 크로스 도메인 웹브라우저 클라이언트 환경에서도 문제없이 연동됩니다.
+
+##### 4) SSE 서버 및 호환성 몽키패치 검증 테스트
+서버 상에서 SSE 포트, CORS preflight 및 `/sse` 경로로 직접 들어오는 POST/DELETE 포워딩 호환성이 정상적으로 작동하는지 검증하는 단위 테스트를 제공합니다.
 ```bash
+# 기본 SSE 접속 테스트
 python3 tests/test_sse.py
+
+# OPTIONS, POST /sse, DELETE /sse 호환성 집중 검증 테스트
+python3 tests/test_sse_monkeypatch.py
 ```
