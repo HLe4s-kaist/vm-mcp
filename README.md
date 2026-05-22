@@ -111,3 +111,33 @@ sudo apt-get install -y x11-apps gedit
 1. `root@192.168.183.135` 대신 실제 VM의 SSH 접속 계정정보를 사용하고, `/root/proj/vmvm/src/main.py`는 VM 서버 상의 실제 프로젝트 절대 경로로 지정하십시오.
 2. 에이전트가 패스워드를 묻지 않고 로그인할 수 있도록, 로컬 PC의 SSH 공개키가 VM 서버의 `~/.ssh/authorized_keys`에 등록되어 있어야 합니다 (비밀번호 없는 SSH 키 인증 환경 필요).
 3. 연결 성공 시 에이전트 대화창 우측 하단에 플러그 아이콘(MCP 도구 연동 표시)이 뜨며 `click`, `move_to`, `screenshot`, `get_screen_metadata` 등의 도구를 에이전트가 직접 실행해 볼 수 있게 됩니다.
+
+#### SSE (Server-Sent Events) HTTP 웹서버 방식 노출 및 연결 (권한 없는 외부 클라이언트 연동)
+SSH 없이도 직접 특정 HTTP 포트를 통해 외부의 다른 서버나 클라이언트 에이전트가 이 MCP 서버를 웹서버처럼 호출할 수 있도록 HTTP SSE 포트를 노출할 수 있습니다.
+
+##### 1) SSE 서버 구동
+`--mcp-transport sse` 플래그를 사용하여 MCP 서버를 SSE 네트워크 서비스로 구동합니다. 포트 번호는 `--mcp-port` (기본값: `8001`), 바인드 호스트는 `--mcp-host` (기본값: `0.0.0.0`)로 변경 가능합니다.
+```bash
+python3 src/main.py --mcp-transport sse --mcp-port 8001
+```
+이 상태에서는 웹 뷰어(Port 8080)와 함께 MCP SSE Endpoint가 `http://<VM_IP>:8001/sse` 주소로 노출됩니다.
+
+##### 2) 외부 에이전트(예: Claude Desktop) 연동 설정
+외부 클라이언트의 `claude_desktop_config.json`에 `sse` 타입의 MCP 서버로 직접 주소를 등록하면 연동이 완료됩니다.
+```json
+{
+  "mcpServers": {
+    "virtual-monitor-sse": {
+      "type": "sse",
+      "url": "http://192.168.183.135:8001/sse"
+    }
+  }
+}
+```
+*참고*: `192.168.183.135` 부분에 실제 구동되고 있는 외부 VM 서버의 IP 주소를 적어 연결합니다. DNS Rebinding Protection 및 CORS 제약은 서버 내부적으로 보안 완화(`*`) 처리되어 있어 즉각적인 외부 연동이 가능합니다.
+
+##### 3) SSE 서버 구동 검증 테스트
+서버 상에서 SSE 포트 및 엔드포인트 연결성이 유효한지 검증하기 위한 단위 테스트도 지원합니다.
+```bash
+python3 tests/test_sse.py
+```
