@@ -25,3 +25,4 @@
 - [src/mcp_server.py](./src/mcp_server.py): FastMCP API 기반 AI 에이전트 연동 도구 및 리소스 컴포넌트
 - [tests/test_run.py](./tests/test_run.py): 시스템 및 웹 서버 기본 포트/경로 응답 테스트
 - [tests/test_mcp.py](./tests/test_mcp.py): MCP JSON-RPC 2.0 프로토콜 초기화 및 도구 동작 통합 테스트
+- [tests/test_interaction.py](./tests/test_interaction.py): WebSocket을 통한 드래그/스크롤 마우스 인터랙션 이벤트 연동 통합 테스트
