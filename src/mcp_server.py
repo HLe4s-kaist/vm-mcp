@@ -193,6 +193,21 @@ class MCPServer:
                 self.mcp.settings.transport_security.enable_dns_rebinding_protection = False
                 self.mcp.settings.transport_security.allowed_hosts = ["*"]
                 self.mcp.settings.transport_security.allowed_origins = ["*"]
+            
+            # Monkey patch sse_app to add CORS middleware for cross-origin client support (fixes 405 OPTIONS preflight errors)
+            original_sse_app = self.mcp.sse_app
+            def patched_sse_app(*args, **kwargs):
+                app = original_sse_app(*args, **kwargs)
+                from starlette.middleware.cors import CORSMiddleware
+                app.add_middleware(
+                    CORSMiddleware,
+                    allow_origins=["*"],
+                    allow_credentials=True,
+                    allow_methods=["*"],
+                    allow_headers=["*"],
+                )
+                return app
+            self.mcp.sse_app = patched_sse_app
                 
             logging.info(f"Starting MCP Server (SSE transport) on http://{host}:{port} ...")
             self.mcp.run(transport="sse")
