@@ -222,17 +222,34 @@ class MCPServer:
                         if post_message_app:
                             async def wrapped_endpoint(request):
                                 if request.method == "POST":
+                                    session_id_param = request.query_params.get("session_id")
+                                    if not session_id_param:
+                                        # Auto-resolve and inject active session_id if missing
+                                        sse_transport = getattr(post_message_app, "__self__", None)
+                                        if sse_transport and hasattr(sse_transport, "_read_stream_writers"):
+                                            writers = sse_transport._read_stream_writers
+                                            if writers:
+                                                target_session_id = list(writers.keys())[-1]
+                                                request.scope["query_string"] = f"session_id={target_session_id.hex}".encode('utf-8')
+                                                logging.info(f"Auto-mapped session_id-less POST to session {target_session_id}")
+                                            else:
+                                                logging.warning("Received POST request without session_id and no active SSE session exists.")
                                     # Forward to post_message_app
                                     await post_message_app(request.scope, request.receive, request._send)
                                     return NullResponse()
                                 elif request.method == "DELETE":
                                     session_id_param = request.query_params.get("session_id")
+                                    sse_transport = getattr(post_message_app, "__self__", None)
+                                    if not session_id_param and sse_transport and hasattr(sse_transport, "_read_stream_writers"):
+                                        writers = sse_transport._read_stream_writers
+                                        if writers:
+                                            target_session_id = list(writers.keys())[-1]
+                                            session_id_param = target_session_id.hex
                                     if session_id_param:
                                         try:
                                             from uuid import UUID
                                             session_id = UUID(hex=session_id_param)
                                             # Get the bound transport class instance to clear writers
-                                            sse_transport = getattr(post_message_app, "__self__", None)
                                             if sse_transport and hasattr(sse_transport, "_read_stream_writers"):
                                                 writer = sse_transport._read_stream_writers.get(session_id)
                                                 if writer:

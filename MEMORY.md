@@ -11,6 +11,7 @@
 - [x] 외부 에이전트 연동을 위한 MCP SSE(HTTP) 네트워크 서버 기능 구현 및 테스트 완료 (Task 9)
 - [x] MCP SSE /sse 엔드포인트 직접 POST/DELETE 수신 시 405 Method Not Allowed 문제 해결 및 테스트 완료 (Task 10)
 - [x] README.md 에 외부 에이전트 SSE 연동 및 몽키 패치 설명 가이드 업데이트 완료 (Task 10)
+- [x] session_id 누락 클라이언트 대응 활성 세션 자동 매핑 폴백 구현 및 테스트 완료 (Task 11)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)

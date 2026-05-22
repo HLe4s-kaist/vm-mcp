@@ -139,8 +139,8 @@ python3 src/main.py --mcp-transport sse --mcp-port 8001
 ##### 3) 주요 통신 호환성 개선 (Monkeypatch)
 일부 MCP 클라이언트 SDK가 규격서상의 메시지 포스팅 경로(예: `/messages/`)를 따르지 않고, 최초 접속 경로인 `/sse` 자체로 직접 메시지 전송 및 세션 해제를 시도하여 `405 Method Not Allowed` 오류를 유발하는 현상이 있습니다.
 본 서버는 내부적으로 스타렛(Starlette)의 `/sse` 라우팅을 자동 몽키 패칭하여 다음과 같은 개선 사항을 제공합니다.
-- **`POST /sse?session_id=...`**: `/messages/` 하위 앱의 메시지 핸들러로 자동 포워딩하여 405 Method Not Allowed 없이 상호작용 처리가 가능합니다.
-- **`DELETE /sse?session_id=...`**: 사용 중이던 SSE 세션의 메모리 스트림을 안전하고 즉각적으로 해제(Clean-up)하여 메모리 누수를 방지하고 `202 Accepted`를 응답합니다.
+- **`POST /sse?session_id=...` 및 `POST /sse` (session_id 누락)**: `/messages/` 하위 앱의 메시지 핸들러로 자동 포워딩합니다. 특히 클라이언트가 `session_id`를 생략한 채 요청을 전송한 경우에도, 서버 내부에 수립된 활성 에이전트 세션의 UUID를 자동으로 탐색 및 주입(Fallback Mapping)하여 `400 Bad Request` 오류 없이 안전한 도구/리소스 실행을 처리합니다.
+- **`DELETE /sse?session_id=...` 및 `DELETE /sse` (session_id 누락)**: 사용 중이던 SSE 세션의 메모리 스트림을 안전하고 즉각적으로 해제(Clean-up)하여 메모리 누수를 방지하고 `202 Accepted`를 응답합니다. (session_id가 결여된 경우에도 활성 세션을 파악해 자동 닫음 처리)
 - **`OPTIONS /sse`**: CORS Preflight 요청에 대해 적절한 헤더를 반환하여 크로스 도메인 웹브라우저 클라이언트 환경에서도 문제없이 연동됩니다.
 
 ##### 4) SSE 서버 및 호환성 몽키패치 검증 테스트
