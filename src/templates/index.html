@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Monitor Web Viewer & Controller</title>
+    <!-- Premium Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: rgba(20, 20, 30, 0.7);
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+        }
+
+        /* Top Navigation Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 2rem;
+            height: 2rem;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: white;
+            font-size: 1.1rem;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .logo-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #ffffff, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-indicator {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        .status-indicator.online {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Main Content Container */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2rem;
+            padding: 2rem;
+            flex-grow: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Display Wrapper */
+        .display-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .screen-container {
+            position: relative;
+            background: #000;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--card-shadow), 0 0 0 1px var(--border-color);
+            aspect-ratio: 16/10;
+            width: 100%;
+            max-width: 1024px;
+            cursor: crosshair;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #screen-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Control Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            backdrop-filter: blur(16px);
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .input-control {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-control:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Grid of Hotkeys */
+        .hotkeys-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .key-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+
+        .key-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+            border-color: var(--accent-color);
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .stats-label {
+            color: var(--text-secondary);
+        }
+
+        .stats-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Text Input Send Area */
+        .type-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .type-area input {
+            flex-grow: 1;
+        }
+
+        .type-area button {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-section">
+            <div class="logo-icon">V</div>
+            <div class="logo-title">VM Monitor Bridge</div>
+        </div>
+        <div class="status-bar">
+            <div class="status-badge">
+                <span id="conn-indicator" class="status-indicator"></span>
+                <span id="conn-text">Disconnected</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Display Column -->
+        <div class="display-wrapper">
+            <div class="screen-container" id="screen-container">
+                <canvas id="screen-canvas"></canvas>
+            </div>
+            
+            <div style="width: 100%; max-width: 1024px;" class="card">
+                <div class="card-title">실시간 제어 설명</div>
+                <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">
+                    화면 내부를 <strong>클릭</strong>하면 가상 마우스 클릭이 전달됩니다. 
+                    브라우저 포커스가 화면에 맞춰져 있는 상태에서 키보드를 누르면 <strong>키 입력</strong>이 원격으로 전송됩니다. 
+                    아래 단축키 패널을 클릭하거나 직접 입력기를 사용할 수도 있습니다.
+                </p>
+            </div>
+        </div>
+
+        <!-- Sidebar Control Panel -->
+        <div class="sidebar">
+            <!-- System Stats -->
+            <div class="card">
+                <div class="card-title">시스템 상태 (Stats)</div>
+                <div class="stats-row">
+                    <span class="stats-label">해상도</span>
+                    <span class="stats-value" id="stat-resolution">-</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">FPS</span>
+                    <span class="stats-value" id="stat-fps">0</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">지연시간</span>
+                    <span class="stats-value" id="stat-latency">0 ms</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">제어 엔진</span>
+                    <span class="stats-value" id="stat-engine">PyAutoGUI</span>
+                </div>
+            </div>
+
+            <!-- Interactive Keyboard Control -->
+            <div class="card">
+                <div class="card-title">원격 키 텍스트 입력</div>
+                <div class="form-group">
+                    <label>텍스트 전송</label>
+                    <div class="type-area">
+                        <input type="text" id="type-input" class="input-control" placeholder="여기에 입력 후 Enter...">
+                        <button id="type-send-btn" class="btn">전송</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hotkeys -->
+            <div class="card">
+                <div class="card-title">자주 쓰는 특수키 (Hotkeys)</div>
+                <div class="hotkeys-grid">
+                    <button class="key-btn" onclick="sendHotkey('enter')">Enter</button>
+                    <button class="key-btn" onclick="sendHotkey('backspace')">Backspace</button>
+                    <button class="key-btn" onclick="sendHotkey('tab')">Tab</button>
+                    <button class="key-btn" onclick="sendHotkey('escape')">Esc</button>
+                    <button class="key-btn" onclick="sendHotkey(['ctrl', 'c'])">Ctrl+C</button>
+                    <button class="key-btn" onclick="sendHotkey(['ctrl', 'v'])">Ctrl+V</button>
+                    <button class="key-btn" onclick="sendHotkey(['ctrl', 'a'])">Ctrl+A</button>
+                    <button class="key-btn" onclick="sendHotkey('up')">▲ Up</button>
+                    <button class="key-btn" onclick="sendHotkey('down')">▼ Down</button>
+                    <button class="key-btn" onclick="sendHotkey('left')">◀ Left</button>
+                    <button class="key-btn" onclick="sendHotkey('right')">▶ Right</button>
+                    <button class="key-btn" onclick="sendHotkey('space')">Space</button>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+                <div class="card-title">원격 설정 (Settings)</div>
+                <div class="form-group">
+                    <label>스트리밍 FPS</label>
+                    <select id="fps-select" class="input-control" onchange="updateFramerate()">
+                        <option value="1">1 FPS (대역폭 절약)</option>
+                        <option value="2">2 FPS</option>
+                        <option value="5" selected>5 FPS (권장)</option>
+                        <option value="10">10 FPS</option>
+                        <option value="15">15 FPS</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('screen-canvas');
+        const ctx = canvas.getContext('2d');
+        const connIndicator = document.getElementById('conn-indicator');
+        const connText = document.getElementById('conn-text');
+        
+        let ws;
+        let lastFrameTime = Date.now();
+        let frameCount = 0;
+        let fpsInterval = setInterval(calculateFPS, 1000);
+        let activeKeys = new Set();
+
+        function calculateFPS() {
+            document.getElementById('stat-fps').innerText = frameCount;
+            frameCount = 0;
+        }
+
+        function connect() {
+            const loc = window.location;
+            const wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${wsProtocol}//${loc.host}/ws`;
+            
+            console.log(`Connecting to WebSocket: ${wsUrl}`);
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = "blob";
+
+            ws.onopen = () => {
+                connIndicator.classList.add('online');
+                connText.innerText = "Connected";
+                console.log("WebSocket connected.");
+            };
+
+            ws.onclose = () => {
+                connIndicator.classList.remove('online');
+                connText.innerText = "Disconnected";
+                console.log("WebSocket disconnected. Retrying in 2s...");
+                setTimeout(connect, 2000);
+            };
+
+            ws.onerror = (err) => {
+                console.error("WebSocket error:", err);
+            };
+
+            ws.onmessage = (event) => {
+                if (event.data instanceof Blob) {
+                    // Update stats
+                    const now = Date.now();
+                    const latency = now - lastFrameTime;
+                    // We only get raw frames or JSON info
+                    // Handle image binary loading
+                    const url = URL.createObjectURL(event.data);
+                    const img = new Image();
+                    img.onload = () => {
+                        // Match canvas aspect ratio and physical sizes
+                        if (canvas.width !== img.width || canvas.height !== img.height) {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            document.getElementById('stat-resolution').innerText = `${img.width}x${img.height}`;
+                        }
+                        ctx.drawImage(img, 0, 0);
+                        URL.revokeObjectURL(url);
+                        
+                        frameCount++;
+                        lastFrameTime = Date.now();
+                        // Render latency
+                        document.getElementById('stat-latency').innerText = `${Math.max(1, latency)} ms`;
+                    };
+                    img.src = url;
+                } else {
+                    // JSON message
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === "config") {
+                            console.log("Received config from server:", msg.data);
+                        }
+                    } catch(e) {}
+                }
+            };
+        }
+
+        // --- Keyboard / Mouse event handling ---
+
+        canvas.addEventListener('click', (e) => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            // Calculate normalized coordinate (0.0 to 1.0)
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            
+            const button = e.button === 0 ? "left" : e.button === 2 ? "right" : "middle";
+            
+            ws.send(JSON.stringify({
+                type: "click",
+                x: x,
+                y: y,
+                button: button,
+                clicks: 1
+            }));
+        });
+
+        // Prevent context menu on canvas
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Keyboard inputs
+        window.addEventListener('keydown', (e) => {
+            // Only send keyboard inputs if typing text area or inputs are NOT focused
+            if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "SELECT") {
+                return;
+            }
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            // Map standard JS keys to PyAutoGUI key names if necessary
+            let key = e.key;
+            if (key === " ") key = "space";
+            else if (key === "ArrowUp") key = "up";
+            else if (key === "ArrowDown") key = "down";
+            else if (key === "ArrowLeft") key = "left";
+            else if (key === "ArrowRight") key = "right";
+            else if (key === "Control") key = "ctrl";
+            else if (key === "Shift") key = "shift";
+            else if (key === "Alt") key = "alt";
+            else if (key === "Escape") key = "escape";
+            else if (key === "Backspace") key = "backspace";
+            else if (key === "Tab") key = "tab";
+            else if (key === "Enter") key = "enter";
+
+            // Avoid double sending key down repeating
+            if (activeKeys.has(key)) return;
+            activeKeys.add(key);
+
+            // Send simple press or key_down event
+            ws.send(JSON.stringify({
+                type: "key_down",
+                key: key.toLowerCase()
+            }));
+
+            // Prevent default browser shortcuts when focused on remote viewer (like backspace, tab, etc)
+            if (["tab", "backspace", "space", "up", "down", "left", "right"].includes(key.toLowerCase())) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "SELECT") {
+                return;
+            }
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+            let key = e.key;
+            if (key === " ") key = "space";
+            else if (key === "ArrowUp") key = "up";
+            else if (key === "ArrowDown") key = "down";
+            else if (key === "ArrowLeft") key = "left";
+            else if (key === "ArrowRight") key = "right";
+            else if (key === "Control") key = "ctrl";
+            else if (key === "Shift") key = "shift";
+            else if (key === "Alt") key = "alt";
+            else if (key === "Escape") key = "escape";
+            else if (key === "Backspace") key = "backspace";
+            else if (key === "Tab") key = "tab";
+            else if (key === "Enter") key = "enter";
+
+            activeKeys.delete(key);
+
+            ws.send(JSON.stringify({
+                type: "key_up",
+                key: key.toLowerCase()
+            }));
+        });
+
+        // --- Custom remote controls ---
+
+        function sendHotkey(key) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({
+                type: "press",
+                key: key
+            }));
+        }
+
+        const typeInput = document.getElementById('type-input');
+        const typeSendBtn = document.getElementById('type-send-btn');
+
+        function sendText() {
+            const text = typeInput.value;
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            ws.send(JSON.stringify({
+                type: "type",
+                text: text
+            }));
+            typeInput.value = "";
+        }
+
+        typeSendBtn.addEventListener('click', sendText);
+        typeInput.addEventListener('keydown', (e) => {
+            if (e.key === "Enter") {
+                sendText();
+            }
+        });
+
+        function updateFramerate() {
+            const val = document.getElementById('fps-select').value;
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            ws.send(JSON.stringify({
+                type: "set_fps",
+                fps: parseInt(val)
+            }));
+        }
+
+        // Start connection
+        connect();
+    </script>
+</body>
+</html>
