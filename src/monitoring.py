@@ -138,6 +138,36 @@ class MonitoringBridge:
                                 lambda: self.automation.execute_command("type", text=text)
                             )
                             
+                        elif cmd_type == "mouse_down":
+                            x, y = cmd.get("x"), cmd.get("y")
+                            button = cmd.get("button", "left")
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: self.automation.execute_command("mouse_down", x=x, y=y, button=button)
+                            )
+                        elif cmd_type == "mouse_up":
+                            x, y = cmd.get("x"), cmd.get("y")
+                            button = cmd.get("button", "left")
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: self.automation.execute_command("mouse_up", x=x, y=y, button=button)
+                            )
+                        elif cmd_type == "mouse_move":
+                            x, y = cmd.get("x"), cmd.get("y")
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: self.automation.execute_command("mouse_move", x=x, y=y)
+                            )
+                        elif cmd_type == "scroll":
+                            clicks = cmd.get("clicks", 0)
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: self.automation.execute_command("scroll", clicks=clicks)
+                            )
                         elif cmd_type == "set_fps":
                             new_fps = int(cmd.get("fps", 5))
                             conn_fps = max(1, min(new_fps, 30))

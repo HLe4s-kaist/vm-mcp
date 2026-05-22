@@ -158,3 +158,18 @@ class AutomationWrapper:
     def _action_key_up(self, key):
         pyautogui.keyUp(key)
         return {"key": key}
+
+    def _action_mouse_down(self, x, y, button="left", coordinate_mode=None):
+        phys_x, phys_y = self._resolve_physical_coordinates(x, y, coordinate_mode)
+        pyautogui.mouseDown(x=phys_x, y=phys_y, button=button)
+        return {"x": phys_x, "y": phys_y, "button": button}
+
+    def _action_mouse_up(self, x, y, button="left", coordinate_mode=None):
+        phys_x, phys_y = self._resolve_physical_coordinates(x, y, coordinate_mode)
+        pyautogui.mouseUp(x=phys_x, y=phys_y, button=button)
+        return {"x": phys_x, "y": phys_y, "button": button}
+
+    def _action_mouse_move(self, x, y, coordinate_mode=None):
+        phys_x, phys_y = self._resolve_physical_coordinates(x, y, coordinate_mode)
+        pyautogui.moveTo(x=phys_x, y=phys_y)
+        return {"x": phys_x, "y": phys_y}
