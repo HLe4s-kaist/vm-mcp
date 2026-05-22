@@ -143,7 +143,44 @@ python3 src/main.py --mcp-transport sse --mcp-port 8001
 - **`DELETE /sse?session_id=...` 및 `DELETE /sse` (session_id 누락)**: 사용 중이던 SSE 세션의 메모리 스트림을 안전하고 즉각적으로 해제(Clean-up)하여 메모리 누수를 방지하고 `202 Accepted`를 응답합니다. (session_id가 결여된 경우에도 활성 세션을 파악해 자동 닫음 처리)
 - **`OPTIONS /sse`**: CORS Preflight 요청에 대해 적절한 헤더를 반환하여 크로스 도메인 웹브라우저 클라이언트 환경에서도 문제없이 연동됩니다.
 
-##### 4) SSE 서버 및 호환성 몽키패치 검증 테스트
+##### 4) 파이썬 SSE 클라이언트 연동 검증 스크립트
+외부 PC에서 실제로 SSE 연결을 수립하고 MCP 도구(`get_screen_metadata` 등)를 올바르게 호출하는지 직접 검증해볼 수 있는 파이썬 테스트 클라이언트를 제공합니다.
+이 스크립트는 `httpx` 및 `httpx-sse` 라이브러리를 활용합니다.
+
+- **클라이언트 라이브러리 설치**:
+  ```bash
+  pip install httpx httpx-sse
+  ```
+- **검증 스크립트 파일**: [tests/test_sse_client.py](file:///root/proj/vmvm/tests/test_sse_client.py)
+- **실행 방법**:
+  ```bash
+  # 기본 로컬호스트(127.0.0.1:8001) 테스트 시:
+  python3 tests/test_sse_client.py
+
+  # 외부 특정 VM IP(예: 192.168.183.135:8001) 테스트 시:
+  python3 tests/test_sse_client.py http://192.168.183.135:8001/sse
+  ```
+  성공적으로 연결되면 서버 측의 JSON-RPC 초기화 결과(`initialize`) 및 도구 응답(`get_screen_metadata` 결과)이 화면에 실시간으로 출력되며, 최종적으로 세션 닫기(`DELETE`)까지 안전하게 수행됩니다.
+
+##### 5) 네트워크 및 연결 트러블슈팅 (Q&A)
+- **Q1. `claude_desktop_config.json`에서 `?session_id`를 임의로 직접 설정해주면 해결되나요?**
+  - **A**: 아니요, 클라이언트 SDK(예: Claude Desktop)는 `url`에 명시된 기본 엔드포인트(`http://...:8001/sse`)로 최초 `GET`을 요청해 세션을 생성한 후, 서버로부터 할당받은 일회성 고유 세션 ID를 사용해 통신하도록 설계되어 있습니다. 사용자가 수동으로 설정 파일 내에 `?session_id`를 고정할 수 없으며, 설령 붙여서 보내도 무시됩니다.
+  - 이를 해결하기 위해 본 서버는 **세션 ID가 빠진 요청이 오더라도 내부의 활성 세션을 찾아 자동으로 복구 매핑(Auto-mapping Fallback)**하도록 구현되어 있으니, 설정 파일은 원래의 주소(`http://<IP>:8001/sse`) 그대로 등록하여 사용하시면 됩니다.
+
+- **Q2. 외부에서 연결 시 404/405/400 오류나 타임아웃이 발생합니다. 해결법이 무엇인가요?**
+  - **UFW 방화벽 확인**: 외부 서버(VM)에 접속하려면 포트가 방화벽에 의해 막혀있지 않아야 합니다. VM 터미널에서 다음 명령어로 포트를 개방해 줍니다:
+    ```bash
+    sudo ufw allow 8001/tcp
+    ```
+  - **바인드 호스트(Host Binding)**: 서버가 `127.0.0.1`로만 바인딩되면 외부 접근이 불가능합니다. 본 서버는 기본적으로 `0.0.0.0`으로 바인딩되나, 명시적으로 `--mcp-host 0.0.0.0`을 줘서 실행하고 있는지 확인하십시오:
+    ```bash
+    python3 src/main.py --mcp-transport sse --mcp-host 0.0.0.0 --mcp-port 8001
+    ```
+
+- **Q3. 서버 로그에 `GET /.well-known/oauth-protected-resource HTTP/1.1 404 Not Found` 경고가 찍힙니다.**
+  - **A**: 이는 일부 클라이언트(예: 최신 Claude Desktop)가 OAuth 자원 인식을 위해 기본적으로 조회를 시도하는 경로입니다. 본 MCP 서버에서는 OAuth 인증이 필요 없으므로 404를 반환하며, 이는 실제 도구 호출 및 연동 기능 동작에 아무런 영향을 주지 않는 지극히 정상적인 상태입니다. 안심하셔도 좋습니다.
+
+##### 6) SSE 서버 및 호환성 몽키패치 검증 테스트
 서버 상에서 SSE 포트, CORS preflight 및 `/sse` 경로로 직접 들어오는 POST/DELETE 포워딩 호환성이 정상적으로 작동하는지 검증하는 단위 테스트를 제공합니다.
 ```bash
 # 기본 SSE 접속 테스트
@@ -152,3 +189,4 @@ python3 tests/test_sse.py
 # OPTIONS, POST /sse, DELETE /sse 호환성 집중 검증 테스트
 python3 tests/test_sse_monkeypatch.py
 ```
+

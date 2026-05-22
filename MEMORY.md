@@ -12,6 +12,7 @@
 - [x] MCP SSE /sse 엔드포인트 직접 POST/DELETE 수신 시 405 Method Not Allowed 문제 해결 및 테스트 완료 (Task 10)
 - [x] README.md 에 외부 에이전트 SSE 연동 및 몽키 패치 설명 가이드 업데이트 완료 (Task 10)
 - [x] session_id 누락 클라이언트 대응 활성 세션 자동 매핑 폴백 구현 및 테스트 완료 (Task 11)
+- [x] 외부 SSE 에이전트 연동을 위한 상세 가이드 보완 및 실전 파이썬 테스트 클라이언트 스크립트 제공 완료 (Task 12)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)
@@ -32,3 +33,4 @@
 - [tests/test_interaction.py](./tests/test_interaction.py): WebSocket을 통한 드래그/스크롤 마우스 인터랙션 이벤트 연동 통합 테스트
 - [tests/test_sse.py](./tests/test_sse.py): MCP 서버 HTTP SSE 네트워크 노출 및 연동 통합 테스트
 - [tests/test_sse_monkeypatch.py](./tests/test_sse_monkeypatch.py): MCP 서버 SSE 몽키패칭 호환성(OPTIONS, POST, DELETE) 검증 테스트
+- [tests/test_sse_client.py](./tests/test_sse_client.py): 외부 SSE 클라이언트 에이전트 연동 시뮬레이션 및 검증 테스트
