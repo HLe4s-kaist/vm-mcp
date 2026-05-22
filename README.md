@@ -82,3 +82,32 @@ sudo apt-get install -y x11-apps gedit
 ./run_app.sh gedit
 ```
 실행 후 웹 뷰어(`http://localhost:8080`) 화면을 보면 프로그램 창이 정상적으로 표시되며, 마우스로 창을 클릭하거나 드래그하여 조작할 수 있습니다.
+
+### 6. MCP 클라이언트 연결 가이드 (MCP Client Connection Guide)
+본 서버는 표준 stdio 기반의 MCP 프로토콜을 사용하므로, 외부 서버(VM, 예: `192.168.183.135`)에 떠 있는 인스턴스를 SSH 채널을 통해 로컬 에이전트(예: Claude Desktop 등)와 연동할 수 있습니다.
+
+#### Claude Desktop 설정 예시 (로컬 PC)
+로컬 PC의 Claude Desktop 설정 파일(`claude_desktop_config.json`)의 `mcpServers`에 다음과 같이 원격 SSH 실행 명령을 등록합니다.
+
+- **Windows 위치**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS 위치**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "virtual-monitor": {
+      "command": "ssh",
+      "args": [
+        "-o", "StrictHostKeyChecking=no",
+        "root@192.168.183.135",
+        "python3 /root/proj/vmvm/src/main.py"
+      ]
+    }
+  }
+}
+```
+
+*주의 사항*:
+1. `root@192.168.183.135` 대신 실제 VM의 SSH 접속 계정정보를 사용하고, `/root/proj/vmvm/src/main.py`는 VM 서버 상의 실제 프로젝트 절대 경로로 지정하십시오.
+2. 에이전트가 패스워드를 묻지 않고 로그인할 수 있도록, 로컬 PC의 SSH 공개키가 VM 서버의 `~/.ssh/authorized_keys`에 등록되어 있어야 합니다 (비밀번호 없는 SSH 키 인증 환경 필요).
+3. 연결 성공 시 에이전트 대화창 우측 하단에 플러그 아이콘(MCP 도구 연동 표시)이 뜨며 `click`, `move_to`, `screenshot`, `get_screen_metadata` 등의 도구를 에이전트가 직접 실행해 볼 수 있게 됩니다.
