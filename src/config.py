@@ -17,8 +17,9 @@ DEFAULT_CONFIG = {
         "display_num": 99
     },
     "mcp": {
-        "port": 5000,
-        "host": "127.0.0.1"
+        "transport": "stdio",  # 'stdio' or 'sse'
+        "port": 8001,
+        "host": "0.0.0.0"
     },
     "automation": {
         "fail_safe": True,

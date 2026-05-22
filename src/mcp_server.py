@@ -180,7 +180,22 @@ class MCPServer:
                 return b""
 
     def run(self):
-        """Runs the MCP server in STDIO transport mode."""
-        logging.info("Starting MCP Server (stdio transport)...")
-        # FastMCP.run(transport='stdio') starts standard IO reader/writer
-        self.mcp.run(transport="stdio")
+        """Runs the MCP server in either stdio or sse transport mode based on configuration."""
+        transport = self.config.get("mcp.transport", "stdio")
+        if transport == "sse":
+            host = self.config.get("mcp.host", "0.0.0.0")
+            port = int(self.config.get("mcp.port", 8001))
+            
+            # Configure FastMCP instance settings
+            self.mcp.settings.host = host
+            self.mcp.settings.port = port
+            if hasattr(self.mcp.settings, "transport_security") and self.mcp.settings.transport_security:
+                self.mcp.settings.transport_security.enable_dns_rebinding_protection = False
+                self.mcp.settings.transport_security.allowed_hosts = ["*"]
+                self.mcp.settings.transport_security.allowed_origins = ["*"]
+                
+            logging.info(f"Starting MCP Server (SSE transport) on http://{host}:{port} ...")
+            self.mcp.run(transport="sse")
+        else:
+            logging.info("Starting MCP Server (stdio transport)...")
+            self.mcp.run(transport="stdio")

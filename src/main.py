@@ -14,6 +14,7 @@ import asyncio
 import threading
 import atexit
 import signal
+import argparse
 
 from config import ConfigurationManager
 
@@ -112,6 +113,13 @@ def main():
         stream=sys.stderr
     )
 
+    # Parse CLI arguments to allow network exposure/transport override
+    parser = argparse.ArgumentParser(description="Virtual Monitor MCP Server Orchestrator")
+    parser.add_argument("--mcp-transport", choices=["stdio", "sse"], help="MCP transport mode (stdio/sse)")
+    parser.add_argument("--mcp-port", type=int, help="MCP SSE listener port (default: 8001)")
+    parser.add_argument("--mcp-host", help="MCP SSE bind host (default: 0.0.0.0)")
+    args = parser.parse_args()
+
     # Register exit handlers and signals
     atexit.register(cleanup)
     signal.signal(signal.SIGINT, signal_handler)
@@ -121,6 +129,14 @@ def main():
 
     # 1. Load Configurations
     config_manager = ConfigurationManager()
+
+    # Overwrite loaded config if CLI flags are explicitly passed
+    if args.mcp_transport:
+        config_manager.set("mcp.transport", args.mcp_transport)
+    if args.mcp_port:
+        config_manager.set("mcp.port", args.mcp_port)
+    if args.mcp_host:
+        config_manager.set("mcp.host", args.mcp_host)
 
     # 2. Setup Virtual Framebuffer (Xvfb)
     setup_xvfb(config_manager)
