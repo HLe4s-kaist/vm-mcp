@@ -7,6 +7,7 @@
 - [x] design/main.md에 Configuration Manager 컴포넌트 추가
 - [x] src/ 디렉토리에 모든 핵심 컴포넌트 및 Web Viewer 구현 완료 (Task 8)
 - [x] tests/ 디렉토리에 기본 검증 및 MCP 프로토콜 통합 테스트 작성 및 패스 (Task 8)
+- [x] Web Viewer UI 드래그, 이동 및 마우스 휠 스크롤 연동 완료 (Task 9)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)
