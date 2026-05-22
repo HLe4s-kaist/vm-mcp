@@ -62,3 +62,23 @@ python3 src/main.py
   ```bash
   python3 tests/test_interaction.py
   ```
+
+### 5. 가상 화면에 GUI 프로그램 실행하여 확인하기
+가상 디스플레이(Xvfb)는 기본적으로 빈 화면(검은 화면) 상태입니다. 화면에 GUI 창을 띄워 제어해 보려면 다음과 같이 실행합니다.
+
+#### 1) 테스트용 GUI 프로그램 설치
+간단한 데모 프로그램(`xeyes` 등)이나 텍스트 에디터(`gedit`)를 설치합니다.
+```bash
+sudo apt-get install -y x11-apps gedit
+```
+
+#### 2) 가상 디스플레이에서 프로그램 실행
+제공되는 `run_app.sh` 헬퍼 스크립트를 사용하여 가상 디스플레이 `:99`에 프로그램을 띄웁니다.
+```bash
+# 눈동자가 마우스를 따라 움직이는 xeyes 데모 실행
+./run_app.sh xeyes
+
+# 메모장 프로그램 gedit 실행
+./run_app.sh gedit
+```
+실행 후 웹 뷰어(`http://localhost:8080`) 화면을 보면 프로그램 창이 정상적으로 표시되며, 마우스로 창을 클릭하거나 드래그하여 조작할 수 있습니다.
