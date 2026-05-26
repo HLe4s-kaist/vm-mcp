@@ -13,15 +13,21 @@ import base64
 import logging
 import threading
 from PIL import Image
-import pyautogui
+import sys
+
+pyautogui = None
+try:
+    if sys.platform == "win32" or os.environ.get("DISPLAY"):
+        import pyautogui
+        # Set pyautogui safety setting
+        pyautogui.FAILSAFE = True
+except Exception:
+    pass
 
 try:
     import mss
 except ImportError:
     mss = None
-
-# Set pyautogui safety setting
-pyautogui.FAILSAFE = True
 
 class VisualStateManager:
     def __init__(self, config_manager, vnc_manager=None):
@@ -57,6 +63,8 @@ class VisualStateManager:
                             sct_img = sct.grab(monitor)
                             img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
                     else:
+                        if not pyautogui:
+                            raise RuntimeError("Local display capture is not available (pyautogui failed to load without DISPLAY).")
                         img = pyautogui.screenshot()
                 
                 self.last_capture_time = now
@@ -128,6 +136,8 @@ class VisualStateManager:
                 }
                 
         # Local Mode
+        if not pyautogui:
+            raise RuntimeError("Local display control is not available (pyautogui failed to load without DISPLAY).")
         try:
             # Get physical/logical resolution
             width, height = pyautogui.size()

@@ -10,7 +10,7 @@ import logging
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/vmvm/config.json")
 DEFAULT_CONFIG = {
-    "automation_mode": "local",  # 'local' or 'vnc'
+    "automation_mode": "vnc",  # 'local' or 'vnc'
     "display": {
         "width": 1280,
         "height": 800,
@@ -38,7 +38,7 @@ DEFAULT_CONFIG = {
         "jpeg_quality": 80
     },
     "screenshot": {
-        "save_dir": "~/.config/vmvm/",
+        "save_dir": "~/.config/vmvm/screenshot/",
         "max_size_mb": 100
     },
     "monitoring": {

@@ -8,10 +8,17 @@ Includes coordinate transformation, execution guard, and thread-safe sequencing.
 import time
 import logging
 import threading
-import pyautogui
+import sys
+import os
 
-# Set pyautogui fail-safe (moves mouse to top-left to abort)
-pyautogui.FAILSAFE = True
+pyautogui = None
+try:
+    if sys.platform == "win32" or os.environ.get("DISPLAY"):
+        import pyautogui
+        # Set pyautogui fail-safe (moves mouse to top-left to abort)
+        pyautogui.FAILSAFE = True
+except Exception:
+    pass
 
 # PyAutoGUI to VNC keysym mapping
 PYAUTOGUI_TO_VNC_KEYS = {
@@ -100,6 +107,8 @@ class AutomationWrapper:
                     if not self.vnc or not self.vnc.client:
                         raise RuntimeError("VNC environment is not connected or active.")
                 else:
+                    if not pyautogui:
+                        raise RuntimeError("Local display control is not available (pyautogui failed to load without DISPLAY).")
                     try:
                         pyautogui.size()
                     except Exception as e:
