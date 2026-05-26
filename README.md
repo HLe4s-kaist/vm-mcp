@@ -1,5 +1,10 @@
 # Virtual Monitor MCP Server
 
+[English Version](README.en.md)
+
+> [!IMPORTANT]
+> 해당 레포지토리는 모든 코드를 AI에 의해 구현하였습니다. 모든 책임은 본인에게 있습니다.
+
 ## 개요 (Overview)
 
 본 프로젝트는 CLI(Command Line Interface) 환경에서 동작하는 AI 에이전트가 GUI(Graphical User Interface) 중심의 운영체제 환경을 인간 사용자와 유사한 방식으로 상호작용하고 조작할 수 있도록 하는 브릿지를 구축하는 것을 목적으로 합니다.
@@ -175,6 +180,12 @@ asyncio.run(main())
 | `get_config` | 시스템 설정 조회 |
 | `set_config` | 시스템 설정 변경 |
 
+### 제공되는 MCP 리소스 목록
+
+| 리소스 URI | 설명 |
+|------------|------|
+| `screen://current` | 가상 모니터의 실시간 스크린 캡처 (바이너리 PNG 데이터 반환) |
+
 ### 네트워크 트러블슈팅
 
 - **방화벽**: 원격 접속 시 포트(기본 8001)가 방화벽에 의해 차단되지 않았는지 확인하세요.
@@ -183,3 +194,7 @@ asyncio.run(main())
   ```
 - **바인드 호스트**: 외부 접속을 허용하려면 `--mcp-host 0.0.0.0`을 명시하세요.
 - **클라이언트 재시작**: 서버를 재시작한 후에는 클라이언트(Claude Desktop 등)도 반드시 재시작해야 합니다.
+
+## 라이선스 (License)
+
+본 프로젝트는 GPLv2 (GNU General Public License v2.0) 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하십시오.

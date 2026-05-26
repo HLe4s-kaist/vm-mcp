@@ -12,6 +12,8 @@
 - [x] MCP 로컬(stdio) 및 원격(streamable-http) 전송 모두 검증 완료 (Task 16)
 - [x] 불필요한 SSE 테스트 파일 삭제 및 streamable-http 통합 테스트 작성 (Task 16)
 - [x] README.md 전면 재작성: SSH/SSE 관련 잘못된 가이드 제거, 정확한 연동 가이드 작성 (Task 16)
+- [x] README.md 개선 및 영어 README.en.md 추가, AI 면책 조항 명시 (Task 17)
+- [x] 라이선스 파일 생성 및 GPLv2 라이선스 설정 (Task 17)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)
@@ -20,6 +22,9 @@
 - [design/visual_state_manager.md](./design/visual_state_manager.md): Visual State Manager - 상세 설계 (상향/하향 상호작용 구조 적용)
 
 ## 소스코드 및 검증 파일
+- [LICENSE](./LICENSE): GPLv2 라이선스 전문
+- [README.md](./README.md): 프로젝트 메인 한국어 리드미
+- [README.en.md](./README.en.md): 프로젝트 메인 영어 리드미
 - [src/main.py](./src/main.py): 시스템 진입점 및 가상 디스플레이(Xvfb) 제어 오케스트레이션
 - [src/config.py](./src/config.py): 중앙 설정 관리 컴포넌트
 - [src/visual_state.py](./src/visual_state.py): 스크린 캡처 및 포맷 인코더 컴포넌트
