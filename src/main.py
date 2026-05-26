@@ -142,13 +142,22 @@ def main():
     setup_xvfb(config_manager)
 
     # 3. Initialize Core Managers
-    from visual_state import VisualStateManager
-    from automation import AutomationWrapper
-    from monitoring import MonitoringBridge
-    from mcp_server import MCPServer
+    # IMPORTANT: Redirect stdout to stderr during imports to suppress Xlib.xauth warnings.
+    # The python-xlib library writes "Xlib.xauth: warning, no xauthority details available"
+    # directly to sys.stdout (bypassing logging), which corrupts MCP stdio protocol
+    # and confuses HTTP transport clients.
+    _real_stdout = sys.stdout
+    sys.stdout = sys.stderr
+    try:
+        from visual_state import VisualStateManager
+        from automation import AutomationWrapper
+        from monitoring import MonitoringBridge
+        from mcp_server import MCPServer
 
-    visual_state = VisualStateManager(config_manager)
-    automation = AutomationWrapper(config_manager, visual_state)
+        visual_state = VisualStateManager(config_manager)
+        automation = AutomationWrapper(config_manager, visual_state)
+    finally:
+        sys.stdout = _real_stdout
 
     # 4. Initialize Monitoring Bridge
     monitoring_bridge = MonitoringBridge(config_manager, visual_state, automation)
