@@ -131,12 +131,18 @@ def main():
     config_manager = ConfigurationManager()
 
     # Overwrite loaded config if CLI flags are explicitly passed
+    # Do not save to disk, as CLI arguments should only affect the current session.
+    # We explicitly force 'stdio' if no transport is provided to ensure MCP client wrappers
+    # don't break if the config file was previously saved with streamable-http.
     if args.mcp_transport:
-        config_manager.set("mcp.transport", args.mcp_transport)
+        config_manager.set("mcp.transport", args.mcp_transport, save=False)
+    else:
+        config_manager.set("mcp.transport", "stdio", save=False)
+
     if args.mcp_port:
-        config_manager.set("mcp.port", args.mcp_port)
+        config_manager.set("mcp.port", args.mcp_port, save=False)
     if args.mcp_host:
-        config_manager.set("mcp.host", args.mcp_host)
+        config_manager.set("mcp.host", args.mcp_host, save=False)
 
     # 2. Setup Virtual Framebuffer (Xvfb)
     setup_xvfb(config_manager)

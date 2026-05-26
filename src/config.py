@@ -82,8 +82,8 @@ class ConfigurationManager:
                 return default
         return val
 
-    def set(self, key_path, value):
-        """Sets a configuration value using dot notation and saves it to file."""
+    def set(self, key_path, value, save=True):
+        """Sets a configuration value using dot notation and optionally saves it to file."""
         keys = key_path.split(".")
         val = self.config
         for key in keys[:-1]:
@@ -91,7 +91,8 @@ class ConfigurationManager:
                 val[key] = {}
             val = val[key]
         val[keys[-1]] = value
-        self.save()
+        if save:
+            self.save()
 
     def _merge_dicts(self, default, user):
         """Recursively merges user config dict into default config dict."""
