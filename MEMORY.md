@@ -8,14 +8,10 @@
 - [x] src/ 디렉토리에 모든 핵심 컴포넌트 및 Web Viewer 구현 완료 (Task 8)
 - [x] tests/ 디렉토리에 기본 검증 및 MCP 프로토콜 통합 테스트 작성 및 패스 (Task 8)
 - [x] Web Viewer UI 드래그, 이동 및 마우스 휠 스크롤 연동 완료 (Task 9)
-- [x] 외부 에이전트 연동을 위한 MCP SSE(HTTP) 네트워크 서버 기능 구현 및 테스트 완료 (Task 9)
-- [x] MCP SSE /sse 엔드포인트 직접 POST/DELETE 수신 시 405 Method Not Allowed 문제 해결 및 테스트 완료 (Task 10)
-- [x] README.md 에 외부 에이전트 SSE 연동 및 몽키 패치 설명 가이드 업데이트 완료 (Task 10)
-- [x] session_id 누락 클라이언트 대응 활성 세션 자동 매핑 폴백 구현 및 테스트 완료 (Task 11)
-- [x] 외부 SSE 에이전트 연동을 위한 상세 가이드 보완 및 실전 파이썬 테스트 클라이언트 스크립트 제공 완료 (Task 12)
-- [x] SSE 전역 세션 관리 안정화 및 상세 요청 로깅 미들웨어 장착 완료 (Task 13)
-- [x] OAuth 메타데이터 404 차단 해결 및 SSE 연결 수립 안정화 완료 (Task 14)
-- [x] SSE MCP 연결 장애 및 OAuth 404 차단 최종 해결, 세션 라이프사이클 안정화 및 README.md 가이드 보완 완료 (Task 15)
+- [x] MCP 기능 전면 리팩토링: 깨진 SSE 몽키패치 전부 제거, streamable-http 전송 추가 (Task 16)
+- [x] MCP 로컬(stdio) 및 원격(streamable-http) 전송 모두 검증 완료 (Task 16)
+- [x] 불필요한 SSE 테스트 파일 삭제 및 streamable-http 통합 테스트 작성 (Task 16)
+- [x] README.md 전면 재작성: SSH/SSE 관련 잘못된 가이드 제거, 정확한 연동 가이드 작성 (Task 16)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)
@@ -30,10 +26,8 @@
 - [src/automation.py](./src/automation.py): PyAutoGUI 래핑 및 좌표 변환/보호 장치 컴포넌트
 - [src/monitoring.py](./src/monitoring.py): Starlette/Uvicorn 기반 실시간 웹/웹소켓 관찰 브릿지 컴포넌트
 - [src/templates/index.html](./src/templates/index.html): 프리미엄 반응형 실시간 모니터 및 컨트롤 웹 UI
-- [src/mcp_server.py](./src/mcp_server.py): FastMCP API 기반 AI 에이전트 연동 도구 및 리소스 컴포넌트
+- [src/mcp_server.py](./src/mcp_server.py): FastMCP API 기반 AI 에이전트 연동 도구 및 리소스 컴포넌트 (stdio + streamable-http 지원)
 - [tests/test_run.py](./tests/test_run.py): 시스템 및 웹 서버 기본 포트/경로 응답 테스트
 - [tests/test_mcp.py](./tests/test_mcp.py): MCP JSON-RPC 2.0 프로토콜 초기화 및 도구 동작 통합 테스트
 - [tests/test_interaction.py](./tests/test_interaction.py): WebSocket을 통한 드래그/스크롤 마우스 인터랙션 이벤트 연동 통합 테스트
-- [tests/test_sse.py](./tests/test_sse.py): MCP 서버 HTTP SSE 네트워크 노출 및 연동 통합 테스트
-- [tests/test_sse_monkeypatch.py](./tests/test_sse_monkeypatch.py): MCP 서버 SSE 몽키패칭 호환성(OPTIONS, POST, DELETE) 검증 테스트
-- [tests/test_sse_client.py](./tests/test_sse_client.py): 외부 SSE 클라이언트 에이전트 연동 시뮬레이션 및 검증 테스트
+- [tests/test_streamable_http.py](./tests/test_streamable_http.py): Streamable HTTP 원격 MCP 전송 및 도구 호출 통합 테스트

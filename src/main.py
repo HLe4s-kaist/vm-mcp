@@ -115,7 +115,7 @@ def main():
 
     # Parse CLI arguments to allow network exposure/transport override
     parser = argparse.ArgumentParser(description="Virtual Monitor MCP Server Orchestrator")
-    parser.add_argument("--mcp-transport", choices=["stdio", "sse"], help="MCP transport mode (stdio/sse)")
+    parser.add_argument("--mcp-transport", choices=["stdio", "sse", "streamable-http"], help="MCP transport mode (stdio/sse/streamable-http)")
     parser.add_argument("--mcp-port", type=int, help="MCP SSE listener port (default: 8001)")
     parser.add_argument("--mcp-host", help="MCP SSE bind host (default: 0.0.0.0)")
     args = parser.parse_args()

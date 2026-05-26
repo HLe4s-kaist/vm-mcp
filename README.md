@@ -7,22 +7,17 @@
 ### 핵심 가치
 - **Headless 환경의 시각화**: GUI가 없는 서버 환경이나 가상 머신(VM)에 가상 모니터를 생성하여 시각적 피드백 제공.
 - **에이전트 중심 자동화**: AI 에이전트가 스크린을 보고, 마우스를 움직이고, 키보드를 입력하여 GUI 기반 작업을 수행할 수 있는 인터페이스 제공.
-- **실시간 모니터링**: 사용자가 웹 브라우저나 VNC 클라이언트를 통해 에이전트의 동작을 실시간으로 감시할 수 있는 환경 제공.
+- **실시간 모니터링**: 사용자가 웹 브라우저를 통해 에이전트의 동작을 실시간으로 감시할 수 있는 환경 제공.
 
 ## Core Features
 
-1.  **Virtual Monitor Creation**: Establish a virtual display on headless systems (e.g., VMware, QEMU) to provide a visual interface for headless environments.
-2.  **GUI Interaction**: Provide capabilities similar to `pyautogui`, including:
-    *   Screen reading/capturing.
-    *   Mouse movements and clicks.
-    *   Keyboard input.
-3.  **Agent-Driven Automation**: Enable AI agents to autonomously operate a computer to perform GUI-based tasks, such as software development and testing, directly from a CLI environment.
-4.  **VNC-based Monitoring**: Support visual monitoring of the virtual monitor's state (screen, mouse, and keyboard inputs) via VNC protocols (e.g., TightVNC).
-5.  **Web-based Monitoring Interface**: The MCP server will host a web server to allow users and agents to monitor the virtual desktop in real-time through a browser.
-
-## Goals
-
-The ultimate goal is to bridge the gap between CLI-driven AI agents and GUI-centric software environments, allowing agents to interact with any desktop environment with the same proficiency as a human user.
+1.  **Virtual Monitor Creation**: Headless 시스템에 가상 디스플레이(Xvfb)를 생성하여 GUI 환경을 제공합니다.
+2.  **GUI Interaction**: PyAutoGUI를 통한 GUI 자동화 기능:
+    *   화면 캡처/읽기
+    *   마우스 이동, 클릭, 드래그
+    *   키보드 입력 (타이핑, 단축키)
+3.  **MCP Protocol 지원**: 표준 MCP(Model Context Protocol)를 통해 AI 에이전트가 도구를 호출합니다.
+4.  **Web-based Monitoring**: 실시간 웹 뷰어(Port 8080)를 통한 가상 데스크톱 모니터링 및 원격 조작.
 
 ## 설치 및 실행 가이드 (Installation & Usage Guide)
 
@@ -39,16 +34,24 @@ pip install pyautogui pillow websockets mcp mss starlette uvicorn pyperclip pyth
 ```
 
 ### 3. 프로젝트 실행
-메인 오케스트레이터를 실행하여 가상 모니터(Xvfb `:99`)와 웹 뷰어 서버(Port `8080`) 및 MCP stdio 서버를 동시 구동합니다.
+
+#### 로컬 stdio 모드 (기본)
+AI 에이전트(예: Claude Desktop)가 로컬에서 직접 프로세스를 실행하여 stdin/stdout으로 통신합니다.
 ```bash
 python3 src/main.py
 ```
-- 실행 후 브라우저에서 `http://localhost:8080`에 접속하면, 미려한 다크 모드 UI의 **VM Monitor Bridge** 웹 뷰어가 나타납니다.
-- 웹 뷰어 화면 위에서 마우스 드래그, 클릭, 이동, 마우스 휠 스크롤 조작을 실시간으로 수행하여 가상 환경을 직접 컨트롤할 수 있습니다.
-- 키보드로 글자를 타이핑하거나 우측의 특수 핫키 패널을 사용하여 원격으로 키 입력을 보낼 수 있습니다.
+
+#### 원격 HTTP 모드 (streamable-http)
+외부 클라이언트가 네트워크를 통해 접속할 수 있도록 HTTP 서버를 노출합니다.
+```bash
+python3 src/main.py --mcp-transport streamable-http --mcp-port 8001
+```
+
+실행 후:
+- 웹 뷰어: `http://localhost:8080` (가상 데스크톱 실시간 모니터링)
+- MCP 엔드포인트: `http://localhost:8001/mcp/` (AI 에이전트 연동용)
 
 ### 4. 통합 검증 테스트 실행
-시스템이 올바르게 구성되어 구동되는지 검증하기 위한 통합 테스트 스크립트를 제공합니다.
 
 - **포트 바인딩 및 웹 페이지 로드 테스트**:
   ```bash
@@ -58,22 +61,24 @@ python3 src/main.py
   ```bash
   python3 tests/test_mcp.py
   ```
-- **WebSocket 기반 양방향 마우스 드래그/이동/스크롤 이벤트 인터랙션 테스트**:
+- **WebSocket 기반 마우스/키보드 인터랙션 테스트**:
   ```bash
   python3 tests/test_interaction.py
+  ```
+- **Streamable HTTP 원격 MCP 전송 테스트**:
+  ```bash
+  python3 tests/test_streamable_http.py
   ```
 
 ### 5. 가상 화면에 GUI 프로그램 실행하여 확인하기
 가상 디스플레이(Xvfb)는 기본적으로 빈 화면(검은 화면) 상태입니다. 화면에 GUI 창을 띄워 제어해 보려면 다음과 같이 실행합니다.
 
 #### 1) 테스트용 GUI 프로그램 설치
-간단한 데모 프로그램(`xeyes` 등)이나 텍스트 에디터(`gedit`)를 설치합니다.
 ```bash
 sudo apt-get install -y x11-apps gedit
 ```
 
 #### 2) 가상 디스플레이에서 프로그램 실행
-제공되는 `run_app.sh` 헬퍼 스크립트를 사용하여 가상 디스플레이 `:99`에 프로그램을 띄웁니다.
 ```bash
 # 눈동자가 마우스를 따라 움직이는 xeyes 데모 실행
 ./run_app.sh xeyes
@@ -81,116 +86,100 @@ sudo apt-get install -y x11-apps gedit
 # 메모장 프로그램 gedit 실행
 ./run_app.sh gedit
 ```
-실행 후 웹 뷰어(`http://localhost:8080`) 화면을 보면 프로그램 창이 정상적으로 표시되며, 마우스로 창을 클릭하거나 드래그하여 조작할 수 있습니다.
 
-### 6. MCP 클라이언트 연결 가이드 (MCP Client Connection Guide)
-본 서버는 표준 stdio 기반의 MCP 프로토콜을 사용하므로, 외부 서버(VM, 예: `192.168.183.135`)에 떠 있는 인스턴스를 SSH 채널을 통해 로컬 에이전트(예: Claude Desktop 등)와 연동할 수 있습니다.
+## MCP 클라이언트 연결 가이드 (MCP Client Connection Guide)
 
-#### Claude Desktop 설정 예시 (로컬 PC)
-로컬 PC의 Claude Desktop 설정 파일(`claude_desktop_config.json`)의 `mcpServers`에 다음과 같이 원격 SSH 실행 명령을 등록합니다.
+### 방법 1: 로컬 stdio 연결 (권장)
+로컬 머신에서 실행하거나, AI 에이전트가 직접 프로세스를 시작하는 경우.
 
-- **Windows 위치**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS 위치**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+#### Claude Desktop 설정 예시
+로컬 PC의 Claude Desktop 설정 파일(`claude_desktop_config.json`)에 다음을 추가합니다.
+
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "virtual-monitor": {
-      "command": "ssh",
-      "args": [
-        "-o", "StrictHostKeyChecking=no",
-        "root@192.168.183.135",
-        "python3 /root/proj/vmvm/src/main.py"
-      ]
+      "command": "python3",
+      "args": ["/path/to/vmvm/src/main.py"]
     }
   }
 }
 ```
 
-*주의 사항*:
-1. `root@192.168.183.135` 대신 실제 VM의 SSH 접속 계정정보를 사용하고, `/root/proj/vmvm/src/main.py`는 VM 서버 상의 실제 프로젝트 절대 경로로 지정하십시오.
-2. 에이전트가 패스워드를 묻지 않고 로그인할 수 있도록, 로컬 PC의 SSH 공개키가 VM 서버의 `~/.ssh/authorized_keys`에 등록되어 있어야 합니다 (비밀번호 없는 SSH 키 인증 환경 필요).
-3. 연결 성공 시 에이전트 대화창 우측 하단에 플러그 아이콘(MCP 도구 연동 표시)이 뜨며 `click`, `move_to`, `screenshot`, `get_screen_metadata` 등의 도구를 에이전트가 직접 실행해 볼 수 있게 됩니다.
+### 방법 2: 원격 Streamable HTTP 연결
+원격 서버(VM 등)에서 실행 중인 MCP 서버에 네트워크를 통해 접속하는 경우.
 
-#### SSE (Server-Sent Events) HTTP 웹서버 방식 노출 및 연결 (권한 없는 외부 클라이언트 연동)
-SSH 없이도 직접 특정 HTTP 포트를 통해 외부의 다른 서버나 클라이언트 에이전트가 이 MCP 서버를 웹서버처럼 호출할 수 있도록 HTTP SSE 포트를 노출할 수 있습니다.
-
-##### 1) SSE 서버 구동
-`--mcp-transport sse` 플래그를 사용하여 MCP 서버를 SSE 네트워크 서비스로 구동합니다. 포트 번호는 `--mcp-port` (기본값: `8001`), 바인드 호스트는 `--mcp-host` (기본값: `0.0.0.0`)로 변경 가능합니다.
+#### 1) 서버 측: HTTP 모드로 시작
 ```bash
-python3 src/main.py --mcp-transport sse --mcp-port 8001
+python3 src/main.py --mcp-transport streamable-http --mcp-port 8001 --mcp-host 0.0.0.0
 ```
-이 상태에서는 웹 뷰어(Port 8080)와 함께 MCP SSE Endpoint가 `http://<VM_IP>:8001/sse` 주소로 노출됩니다.
 
-##### 2) 외부 에이전트(예: Claude Desktop) 연동 설정
-외부 클라이언트의 `claude_desktop_config.json`에 `sse` 타입의 MCP 서버로 직접 주소를 등록하면 연동이 완료됩니다.
+#### 2) 클라이언트 측: Claude Desktop 설정
 ```json
 {
   "mcpServers": {
-    "virtual-monitor-sse": {
-      "type": "sse",
-      "url": "http://192.168.183.135:8001/sse"
+    "virtual-monitor": {
+      "type": "streamable-http",
+      "url": "http://<SERVER_IP>:8001/mcp/"
     }
   }
 }
 ```
-*참고*: `192.168.183.135` 부분에 실제 구동되고 있는 외부 VM 서버의 IP 주소를 적어 연결합니다. DNS Rebinding Protection 및 CORS 제약은 서버 내부적으로 보안 완화(`*`) 처리되어 있어 즉각적인 외부 연동이 가능합니다.
 
-##### 3) 주요 통신 호환성 개선 (Monkeypatch)
-일부 MCP 클라이언트 SDK가 규격서상의 메시지 포스팅 경로(예: `/messages/`)를 따르지 않고 최초 접속 경로인 `/sse` 자체로 요청하거나, CORS preflight 및 OAuth 보안 단계를 수행하여 연결이 끊어지는 호환성 이슈가 있습니다. 본 서버는 스타렛(Starlette) 앱과 `SseServerTransport`를 자동 몽키 패칭하여 다음과 같은 완벽한 호환성을 제공합니다.
-- **OAuth Discovery 200 OK 응답**: 최신 Claude Desktop 등 일부 클라이언트는 연결 전 `GET /.well-known/oauth-protected-resource` 및 `/sse` 경로를 조회하여 인증 서버 규격을 테스트합니다. 서버는 404 대신 성공 응답(`200 OK`, 빈 JSON `{}`)을 즉시 제공하여 클라이언트가 비정상 중단하지 않고 정상적으로 SSE 스트림을 수립하도록 돕습니다.
-- **`POST /sse?session_id=...` 및 `POST /sse` (session_id 누락)**: `/messages/` 하위 앱의 메시지 핸들러로 자동 포워딩합니다. 특히 클라이언트가 `session_id`를 생략한 채 요청을 전송한 경우에도, 서버 내부에 수립된 활성 에이전트 세션의 UUID를 자동으로 탐색 및 주입(Fallback Mapping)하여 `400 Bad Request` 오류 없이 안전한 도구/리소스 실행을 처리합니다.
-- **세션 자동 정리 및 메모리 누수 방지 (Stale Session Cleanup)**: 에이전트 연결이 끊어지거나 종료(Context manager exit)되면, 활성 세션 맵에서 해당 `session_id`를 즉시 제거(pop)합니다. 이로 인해 끊어진 죽은 세션으로 POST가 흘러가는 현상을 원천적으로 방지합니다.
-- **CORS `OPTIONS` Preflight 완벽 대응**: 브라우저나 크로스 오리진 샌드박스 환경의 클라이언트가 `/messages/` 및 `/sse` 경로로 OPTIONS 요청을 보낼 때, JSON-RPC validation 에러 없이 CORS 승인 헤더와 함께 즉각적인 `200/204` 응답을 리턴하도록 패치하여 연결이 거부되지 않도록 설계했습니다.
+> `<SERVER_IP>`에 실제 서버의 IP 주소를 입력합니다.
 
-##### 4) 파이썬 SSE 클라이언트 연동 검증 스크립트
-외부 PC에서 실제로 SSE 연결을 수립하고 MCP 도구(`get_screen_metadata` 등)를 올바르게 호출하는지 직접 검증해볼 수 있는 파이썬 테스트 클라이언트를 제공합니다.
-이 스크립트는 `httpx` 및 `httpx-sse` 라이브러리를 활용합니다.
+#### 3) Python 클라이언트로 프로그래밍 방식 연동
+```python
+import asyncio
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
 
-- **클라이언트 라이브러리 설치**:
-  ```bash
-  pip install httpx httpx-sse
-  ```
-- **검증 스크립트 파일**: [tests/test_sse_client.py](file:///root/proj/vmvm/tests/test_sse_client.py)
-- **실행 방법**:
-  ```bash
-  # 기본 로컬호스트(127.0.0.1:8001) 테스트 시:
-  python3 tests/test_sse_client.py
+async def main():
+    url = "http://<SERVER_IP>:8001/mcp/"
+    async with streamable_http_client(url) as (read, write, get_session_id):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            
+            # 도구 목록 확인
+            tools = await session.list_tools()
+            print([t.name for t in tools.tools])
+            
+            # 스크린 메타데이터 조회
+            result = await session.call_tool("get_screen_metadata", {})
+            print(result.content[0].text)
+            
+            # 스크린샷 촬영
+            screenshot = await session.call_tool("screenshot", {"format_type": "png"})
+            print(f"Screenshot base64 length: {len(screenshot.content[0].text)}")
 
-  # 외부 특정 VM IP(예: 192.168.183.135:8001) 테스트 시:
-  python3 tests/test_sse_client.py http://192.168.183.135:8001/sse
-  ```
-  성공적으로 연결되면 서버 측의 JSON-RPC 초기화 결과(`initialize`) 및 도구 응답(`get_screen_metadata` 결과)이 화면에 실시간으로 출력되며, 최종적으로 세션 닫기(`DELETE`)까지 안전하게 수행됩니다.
-
-##### 5) 네트워크 및 연결 트러블슈팅 (Q&A)
-- **Q1. `claude_desktop_config.json`에서 `?session_id`를 임의로 직접 설정해주면 해결되나요?**
-  - **A**: 아니요, 클라이언트 SDK(예: Claude Desktop)는 `url`에 명시된 기본 엔드포인트(`http://...:8001/sse`)로 최초 `GET`을 요청해 세션을 생성한 후, 서버로부터 할당받은 일회성 고유 세션 ID를 사용해 통신하도록 설계되어 있습니다. 사용자가 수동으로 설정 파일 내에 `?session_id`를 고정할 수 없으며, 설령 붙여서 보내도 무시됩니다.
-  - 이를 해결하기 위해 본 서버는 **세션 ID가 빠진 요청이 오더라도 내부의 활성 세션을 찾아 자동으로 복구 매핑(Auto-mapping Fallback)**하도록 구현되어 있으니, 설정 파일은 원래의 주소(`http://<IP>:8001/sse`) 그대로 등록하여 사용하시면 됩니다.
-
-- **Q2. 외부에서 연결 시 404/405/400 오류나 타임아웃이 발생합니다. 해결법이 무엇인가요?**
-  - **UFW 방화벽 확인**: 외부 서버(VM)에 접속하려면 포트가 방화벽에 의해 막혀있지 않아야 합니다. VM 터미널에서 다음 명령어로 포트를 개방해 줍니다:
-    ```bash
-    sudo ufw allow 8001/tcp
-    ```
-  - **바인드 호스트(Host Binding)**: 서버가 `127.0.0.1`로만 바인딩되면 외부 접근이 불가능합니다. 본 서버는 기본적으로 `0.0.0.0`으로 바인딩되나, 명시적으로 `--mcp-host 0.0.0.0`을 줘서 실행하고 있는지 확인하십시오:
-    ```bash
-    python3 src/main.py --mcp-transport sse --mcp-host 0.0.0.0 --mcp-port 8001
-    ```
-
-- **Q3. 서버 로그에 `GET /.well-known/oauth-protected-resource HTTP/1.1 404 Not Found` 경고가 찍힙니다.**
-  - **A**: 과거 버전에서는 404 Not Found로 무시했으나, 최신 클라이언트(Claude Desktop 등) 중 일부는 이 응답을 받고 연결 단계를 강제 종료하는 증상이 발견되었습니다. 현재는 이 경로에 대해 더미 `200 OK` 및 빈 JSON `{}` 응답을 반환하도록 몽키 패치가 보완되어 있으므로, 404로 인한 연결 차단 문제가 해결되었습니다.
-
-- **Q4. 서버를 재시작한 후 클라이언트 에이전트에서 400 Bad Request가 발생하거나 연결이 안 됩니다.**
-  - **A**: **클라이언트 에이전트 프로그램(Claude Desktop, Cursor 등)을 반드시 재시작해야 합니다.**
-  - 클라이언트는 이전 연결 단계에서 할당받은 일회성 `session_id`를 로컬에 캐싱해두고 POST 요청을 계속 보냅니다. 서버가 재시작되면 해당 세션은 완전히 증발하므로, 클라이언트가 새 세션을 맺도록 클라이언트 앱을 완전히 종료했다가 다시 켜주셔야 합니다. (이때 서버 측은 이전 세션 POST에 대해 친절한 400 Bad Request 안내 메시지를 출력합니다)
-
-##### 6) SSE 서버 및 호환성 몽키패치 검증 테스트
-서버 상에서 SSE 포트, CORS preflight 및 `/sse` 경로로 직접 들어오는 POST/DELETE 포워딩 호환성이 정상적으로 작동하는지 검증하는 단위 테스트를 제공합니다.
-```bash
-# 기본 SSE 접속 테스트
-python3 tests/test_sse.py
-
-# OPTIONS, POST /sse, DELETE /sse 호환성 집중 검증 테스트
-python3 tests/test_sse_monkeypatch.py
+asyncio.run(main())
 ```
 
+### 제공되는 MCP 도구 목록
+
+| 도구 이름 | 설명 |
+|-----------|------|
+| `get_screen_metadata` | 화면 해상도, 디스플레이 상태 등 메타데이터 조회 |
+| `screenshot` | 가상 모니터 스크린샷 촬영 (Base64 인코딩) |
+| `click` | 지정 좌표에 마우스 클릭 (좌표: 0.0~1.0 정규화) |
+| `move_to` | 마우스 커서 이동 |
+| `drag_to` | 마우스 드래그 |
+| `scroll` | 마우스 휠 스크롤 |
+| `type` | 텍스트 입력 (키보드/클립보드 자동 선택) |
+| `press` | 단일 키 또는 키 조합 입력 (예: `ctrl+c`) |
+| `key_down` | 키 누르고 있기 |
+| `key_up` | 눌린 키 해제 |
+| `get_config` | 시스템 설정 조회 |
+| `set_config` | 시스템 설정 변경 |
+
+### 네트워크 트러블슈팅
+
+- **방화벽**: 원격 접속 시 포트(기본 8001)가 방화벽에 의해 차단되지 않았는지 확인하세요.
+  ```bash
+  sudo ufw allow 8001/tcp
+  ```
+- **바인드 호스트**: 외부 접속을 허용하려면 `--mcp-host 0.0.0.0`을 명시하세요.
+- **클라이언트 재시작**: 서버를 재시작한 후에는 클라이언트(Claude Desktop 등)도 반드시 재시작해야 합니다.
