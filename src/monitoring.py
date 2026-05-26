@@ -31,6 +31,9 @@ class MonitoringBridge:
                 Route("/", self.handle_index),
                 Route("/api/config", self.handle_get_config, methods=["GET"]),
                 Route("/api/config", self.handle_set_config, methods=["POST"]),
+                Route("/api/screenshots", self.handle_get_screenshots, methods=["GET"]),
+                Route("/api/screenshots/clear", self.handle_clear_screenshots, methods=["POST"]),
+                Route("/api/screenshots/capture", self.handle_capture_screenshot, methods=["POST"]),
                 WebSocketRoute("/ws", self.handle_websocket)
             ]
         )
@@ -59,6 +62,40 @@ class MonitoringBridge:
             return JSONResponse({"status": "success", "config": self.config.config})
         except Exception as e:
             return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+
+    async def handle_get_screenshots(self, request):
+        """Returns screenshot storage statistics and list of files."""
+        try:
+            stats = self.visual_state.get_screenshot_storage_stats()
+            return JSONResponse(stats)
+        except Exception as e:
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+    async def handle_clear_screenshots(self, request):
+        """Clears all screenshot files."""
+        try:
+            count = self.visual_state.clear_all_screenshots()
+            stats = self.visual_state.get_screenshot_storage_stats()
+            return JSONResponse({"status": "success", "deleted_count": count, "stats": stats})
+        except Exception as e:
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+    async def handle_capture_screenshot(self, request):
+        """Captures a screenshot, saves it to disk, and returns the stats."""
+        try:
+            loop = asyncio.get_running_loop()
+            file_path = await loop.run_in_executor(
+                None,
+                lambda: self.visual_state.save_screenshot(format_type="png", quality=80)
+            )
+            stats = self.visual_state.get_screenshot_storage_stats()
+            return JSONResponse({
+                "status": "success", 
+                "saved_file": os.path.basename(file_path),
+                "stats": stats
+            })
+        except Exception as e:
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
     async def handle_websocket(self, websocket: WebSocket):
         """Handles visual streaming and interactive remote control input."""

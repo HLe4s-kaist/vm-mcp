@@ -56,6 +56,10 @@ class MCPServer:
                 base64_data = self.visual_state.get_screen_base64(
                     format_type=format_type, quality=quality, force=True
                 )
+                try:
+                    self.visual_state.save_screenshot(format_type=format_type, quality=quality)
+                except Exception as ex:
+                    logging.error(f"Failed to save screenshot file to disk: {ex}")
                 return base64_data
             except Exception as e:
                 return f"Error capturing screenshot: {str(e)}"

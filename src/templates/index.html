@@ -407,6 +407,40 @@
                     </select>
                 </div>
             </div>
+
+            <!-- Screenshot Storage Manager -->
+            <div class="card">
+                <div class="card-title">스크린샷 저장소 (Storage)</div>
+                <div class="form-group">
+                    <label>최대 보관 용량 (MB)</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem;">
+                        <input type="number" id="storage-limit-input" class="input-control" style="width: 100px;" min="1" max="10000" value="100">
+                        <button class="btn btn-secondary" onclick="updateStorageLimit()" style="width: auto; padding: 0.5rem 0.75rem; font-size: 0.8rem; height: 38px; display: inline-flex; align-items: center;">적용</button>
+                    </div>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">현재 용량</span>
+                    <span class="stats-value" id="storage-used">- MB</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">보관 파일 개수</span>
+                    <span class="stats-value" id="storage-count">0개</span>
+                </div>
+                
+                <!-- Progress bar for storage usage -->
+                <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; margin: 0.75rem 0; overflow: hidden;">
+                    <div id="storage-progress" style="width: 0%; height: 100%; background: var(--accent-color); border-radius: 3px; transition: width 0.3s;"></div>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button class="btn" onclick="captureScreenshot()" style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.8rem;">즉시 캡처</button>
+                    <button class="btn btn-secondary" onclick="clearScreenshots()" style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.2); color: #fca5a5;">모두 비우기</button>
+                </div>
+
+                <div id="screenshot-files-list" style="margin-top: 1rem; max-height: 120px; overflow-y: auto; font-size: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                    <div style="color: var(--text-secondary); text-align: center;">저장된 파일 없음</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -674,8 +708,121 @@
             }));
         }
 
+        // --- Screenshot Management JS ---
+        async function fetchScreenshotStats() {
+            try {
+                const response = await fetch('/api/screenshots');
+                if (!response.ok) throw new Error("API error");
+                const data = await response.json();
+                updateScreenshotUI(data);
+            } catch (err) {
+                console.error("Failed to fetch screenshot stats:", err);
+            }
+        }
+
+        function updateScreenshotUI(stats) {
+            const totalMB = (stats.total_size_bytes / (1024 * 1024)).toFixed(2);
+            const limitMB = stats.max_size_mb;
+            const count = stats.files.length;
+
+            document.getElementById('storage-used').innerText = `${totalMB} / ${limitMB} MB`;
+            document.getElementById('storage-count').innerText = `${count}개`;
+            document.getElementById('storage-limit-input').value = limitMB;
+
+            const percent = Math.min(100, (stats.total_size_bytes / stats.max_size_bytes) * 100);
+            const progress = document.getElementById('storage-progress');
+            progress.style.width = `${percent}%`;
+            if (percent > 90) {
+                progress.style.backgroundColor = 'var(--danger)';
+            } else if (percent > 70) {
+                progress.style.backgroundColor = 'var(--warning)';
+            } else {
+                progress.style.backgroundColor = 'var(--accent-color)';
+            }
+
+            // Update files list
+            const listDiv = document.getElementById('screenshot-files-list');
+            if (stats.files.length === 0) {
+                listDiv.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 0.5rem 0;">저장된 스크린샷 없음</div>';
+            } else {
+                listDiv.innerHTML = stats.files.map(f => {
+                    const timeStr = new Date(f.created_time * 1000).toLocaleTimeString();
+                    const szKB = (f.size_bytes / 1024).toFixed(0);
+                    return `<div style="display: flex; justify-content: space-between; padding: 0.25rem 0; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.02);">
+                        <span title="${f.name}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">${f.name}</span>
+                        <span>${szKB} KB (${timeStr})</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        async function updateStorageLimit() {
+            const limitInput = document.getElementById('storage-limit-input');
+            const val = parseInt(limitInput.value);
+            if (isNaN(val) || val < 1) return;
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({'screenshot.max_size_mb': val})
+                });
+                if (response.ok) {
+                    alert("저장 용량 설정이 업데이트되었습니다.");
+                    fetchScreenshotStats();
+                } else {
+                    alert("설정 업데이트 실패");
+                }
+            } catch (err) {
+                console.error("Error setting config:", err);
+            }
+        }
+
+        async function captureScreenshot() {
+            try {
+                const response = await fetch('/api/screenshots/capture', { method: 'POST' });
+                if (response.ok) {
+                    const data = await response.json();
+                    updateScreenshotUI(data.stats);
+                }
+            } catch (err) {
+                console.error("Failed to capture screenshot:", err);
+            }
+        }
+
+        async function clearScreenshots() {
+            if (!confirm("정말로 모든 스크린샷 파일을 삭제하시겠습니까?")) return;
+            try {
+                const response = await fetch('/api/screenshots/clear', { method: 'POST' });
+                if (response.ok) {
+                    const data = await response.json();
+                    updateScreenshotUI(data.stats);
+                }
+            } catch (err) {
+                console.error("Failed to clear screenshots:", err);
+            }
+        }
+
+        async function loadSystemConfig() {
+            try {
+                const response = await fetch('/api/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    const mode = config.automation_mode || "local";
+                    document.getElementById('stat-engine').innerText = mode.toUpperCase();
+                }
+            } catch (e) {
+                console.error("Failed to load config:", e);
+            }
+        }
+
         // Start connection
         connect();
+
+        // Initial load
+        loadSystemConfig();
+        fetchScreenshotStats();
+        setInterval(fetchScreenshotStats, 5000);
     </script>
 </body>
 </html>

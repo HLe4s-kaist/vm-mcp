@@ -43,6 +43,12 @@ def cleanup():
 def setup_xvfb(config):
     """Starts the Xvfb server based on configuration."""
     global xvfb_process
+    
+    # Skip Xvfb on Windows or if automation_mode is vnc
+    if sys.platform == "win32" or config.get("automation_mode") == "vnc":
+        logging.info("Skipping Xvfb setup (Windows host or VNC mode active).")
+        return
+
     display_num = config.get("display.display_num", 99)
     width = config.get("display.width", 1280)
     height = config.get("display.height", 800)
@@ -159,9 +165,14 @@ def main():
         from automation import AutomationWrapper
         from monitoring import MonitoringBridge
         from mcp_server import MCPServer
+        from vnc_manager import VNCManager
 
-        visual_state = VisualStateManager(config_manager)
-        automation = AutomationWrapper(config_manager, visual_state)
+        vnc_manager = None
+        if config_manager.get("automation_mode") == "vnc":
+            vnc_manager = VNCManager(config_manager)
+
+        visual_state = VisualStateManager(config_manager, vnc_manager=vnc_manager)
+        automation = AutomationWrapper(config_manager, visual_state, vnc_manager=vnc_manager)
     finally:
         sys.stdout = _real_stdout
 
@@ -173,6 +184,8 @@ def main():
     
     def run_async_loop(loop):
         asyncio.set_event_loop(loop)
+        if vnc_manager:
+            loop.run_until_complete(vnc_manager.start(loop))
         # Start Web monitoring server
         loop.run_until_complete(monitoring_bridge.start())
         # Keep loop running forever
@@ -192,6 +205,9 @@ def main():
         logging.error(f"MCP Server crashed: {e}")
     finally:
         # Shutdown event loop
+        if vnc_manager:
+            loop.call_soon_threadsafe(lambda: asyncio.create_task(vnc_manager.stop()))
+            time.sleep(0.2)
         loop.call_soon_threadsafe(loop.stop)
         cleanup()
 

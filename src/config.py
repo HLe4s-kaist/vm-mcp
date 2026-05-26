@@ -10,6 +10,7 @@ import logging
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/vmvm/config.json")
 DEFAULT_CONFIG = {
+    "automation_mode": "local",  # 'local' or 'vnc'
     "display": {
         "width": 1280,
         "height": 800,
@@ -21,6 +22,11 @@ DEFAULT_CONFIG = {
         "port": 8001,
         "host": "0.0.0.0"
     },
+    "vnc": {
+        "host": "127.0.0.1",
+        "port": 5900,
+        "password": ""
+    },
     "automation": {
         "fail_safe": True,
         "mouse_speed": 0.1,  # in seconds (pyautogui.MINIMUM_DURATION)
@@ -30,6 +36,10 @@ DEFAULT_CONFIG = {
         "cache_limit": 5,
         "format": "png",  # 'png' or 'jpeg'
         "jpeg_quality": 80
+    },
+    "screenshot": {
+        "save_dir": "~/.config/vmvm/",
+        "max_size_mb": 100
     },
     "monitoring": {
         "enabled": True,

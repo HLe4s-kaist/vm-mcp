@@ -14,12 +14,14 @@
 - [x] README.md 전면 재작성: SSH/SSE 관련 잘못된 가이드 제거, 정확한 연동 가이드 작성 (Task 16)
 - [x] README.md 개선 및 영어 README.en.md 추가, AI 면책 조항 명시 (Task 17)
 - [x] 라이선스 파일 생성 및 GPLv2 라이선스 설정 (Task 17)
+- [x] 리팩토링 완료: VNC 지원, Windows 호환 및 스크린샷 파일 용량 관리 및 자동 로테이션 구현 (Task 18)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)
 - [design/mcp_server.md](./design/mcp_server.md): MCP Server - 상세 설계 (컴포넌트 분해 설계)
 - [design/automation_wrapper.md](./design/automation_wrapper.md): Automation Wrapper - 상세 설계 (통합 컴포넌트 및 상호작용 구조)
 - [design/visual_state_manager.md](./design/visual_state_manager.md): Visual State Manager - 상세 설계 (상향/하향 상호작용 구조 적용)
+- [interface/vnc_refactoring.md](./interface/vnc_refactoring.md): VNC 지원 및 스크린샷 파일 관리 리팩토링 계획
 
 ## 소스코드 및 검증 파일
 - [LICENSE](./LICENSE): GPLv2 라이선스 전문
@@ -32,8 +34,10 @@
 - [src/monitoring.py](./src/monitoring.py): Starlette/Uvicorn 기반 실시간 웹/웹소켓 관찰 브릿지 컴포넌트
 - [src/templates/index.html](./src/templates/index.html): 프리미엄 반응형 실시간 모니터 및 컨트롤 웹 UI
 - [src/mcp_server.py](./src/mcp_server.py): FastMCP API 기반 AI 에이전트 연동 도구 및 리소스 컴포넌트 (stdio + streamable-http 지원)
+- [src/vnc_manager.py](./src/vnc_manager.py): asyncvnc 기반 VNC 연결 및 원격 제어 관리 컴포넌트
 - [tests/test_run.py](./tests/test_run.py): 시스템 및 웹 서버 기본 포트/경로 응답 테스트
 - [tests/test_mcp.py](./tests/test_mcp.py): MCP JSON-RPC 2.0 프로토콜 초기화 및 도구 동작 통합 테스트
 - [tests/test_mcp_sdk_client.py](./tests/test_mcp_sdk_client.py): MCP SDK stdio 클라이언트를 통한 전체 도구/리소스 통합 테스트
 - [tests/test_interaction.py](./tests/test_interaction.py): WebSocket을 통한 드래그/스크롤 마우스 인터랙션 이벤트 연동 통합 테스트
 - [tests/test_streamable_http.py](./tests/test_streamable_http.py): Streamable HTTP 원격 MCP 전송 및 도구 호출 통합 테스트
+- [tests/test_screenshot_storage.py](./tests/test_screenshot_storage.py): 스크린샷 저장소 용량 제한 및 로테이션 자동 삭제 통합 테스트
