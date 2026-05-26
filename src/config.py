@@ -10,7 +10,7 @@ import logging
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/vmvm/config.json")
 DEFAULT_CONFIG = {
-    "automation_mode": "vnc",  # 'local' or 'vnc'
+    "automation_mode": "local",  # 'local' or 'vnc'
     "display": {
         "width": 1280,
         "height": 800,
