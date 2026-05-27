@@ -35,7 +35,7 @@ sudo apt-get install -y xvfb xdotool scrot python3-tk python3-dev
 
 ### 2. Install Python Dependencies
 ```bash
-pip install pyautogui pillow websockets mcp mss starlette uvicorn pyperclip python-xlib
+pip install pyautogui pillow websockets mcp mss starlette uvicorn pyperclip python-xlib asyncvnc
 ```
 
 ### 3. Running the Project
@@ -52,8 +52,15 @@ Exposes an HTTP server for remote clients to connect over the network.
 python3 src/main.py --mcp-transport streamable-http --mcp-port 8001
 ```
 
+#### Existing VNC Server Integration (VNC Mode)
+Connects to an existing VNC server (e.g., x11vnc, Windows VNC) to capture the screen and control it. It bypasses the creation of the Xvfb virtual framebuffer.
+```bash
+python3 src/main.py --automation-mode vnc --vnc-host 127.0.0.1 --vnc-port 5900 --vnc-password "your_password"
+```
+* **Shared VNC Connection**: Connects in `shared` mode by default, allowing you to monitor the same screen simultaneously alongside other VNC viewers.
+
 Once running:
-- Web Viewer: `http://localhost:8080` (Real-time monitoring of virtual desktop)
+- Web Viewer: `http://localhost:8080` (Real-time monitoring and web-based control)
 - MCP Endpoint: `http://localhost:8001/mcp/` (For AI agent integration)
 
 ### 4. Running Integration Tests

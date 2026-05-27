@@ -35,7 +35,7 @@ sudo apt-get install -y xvfb xdotool scrot python3-tk python3-dev
 
 ### 2. 파이썬 의존성 패키지 설치
 ```bash
-pip install pyautogui pillow websockets mcp mss starlette uvicorn pyperclip python-xlib
+pip install pyautogui pillow websockets mcp mss starlette uvicorn pyperclip python-xlib asyncvnc
 ```
 
 ### 3. 프로젝트 실행
@@ -52,8 +52,15 @@ python3 src/main.py
 python3 src/main.py --mcp-transport streamable-http --mcp-port 8001
 ```
 
+#### 기존 VNC 서버 연동 모드 (VNC Mode)
+이미 존재하는 VNC 서버(예: x11vnc, 윈도우 VNC 등)에 연결하여 화면을 캡처하고 제어합니다. Xvfb 가상 프레임버퍼를 생성하지 않습니다.
+```bash
+python3 src/main.py --automation-mode vnc --vnc-host 127.0.0.1 --vnc-port 5900 --vnc-password "your_password"
+```
+* **VNC 공유 접속 지원**: 기본적으로 `shared` 모드로 연결되므로 다른 VNC 뷰어와 동시에 같은 화면을 모니터링할 수 있습니다.
+
 실행 후:
-- 웹 뷰어: `http://localhost:8080` (가상 데스크톱 실시간 모니터링)
+- 웹 뷰어: `http://localhost:8080` (실시간 모니터링 및 웹 브라우저를 통한 제어)
 - MCP 엔드포인트: `http://localhost:8001/mcp/` (AI 에이전트 연동용)
 
 ### 4. 통합 검증 테스트 실행
