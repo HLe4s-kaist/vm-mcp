@@ -135,7 +135,7 @@ class MonitoringBridge:
                             button = cmd.get("button", "left")
                             clicks = cmd.get("clicks", 1)
                             # Run blocking pyautogui command in executor to not block event loop
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None, 
                                 lambda: self.automation.execute_command(
@@ -145,7 +145,7 @@ class MonitoringBridge:
                             
                         elif cmd_type == "press":
                             key = cmd.get("key")
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("press", key=key)
@@ -153,7 +153,7 @@ class MonitoringBridge:
                             
                         elif cmd_type == "key_down":
                             key = cmd.get("key")
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("key_down", key=key)
@@ -161,7 +161,7 @@ class MonitoringBridge:
                             
                         elif cmd_type == "key_up":
                             key = cmd.get("key")
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("key_up", key=key)
@@ -169,7 +169,7 @@ class MonitoringBridge:
                             
                         elif cmd_type == "type":
                             text = cmd.get("text")
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("type", text=text)
@@ -178,7 +178,7 @@ class MonitoringBridge:
                         elif cmd_type == "mouse_down":
                             x, y = cmd.get("x"), cmd.get("y")
                             button = cmd.get("button", "left")
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("mouse_down", x=x, y=y, button=button)
@@ -186,21 +186,21 @@ class MonitoringBridge:
                         elif cmd_type == "mouse_up":
                             x, y = cmd.get("x"), cmd.get("y")
                             button = cmd.get("button", "left")
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("mouse_up", x=x, y=y, button=button)
                             )
                         elif cmd_type == "mouse_move":
                             x, y = cmd.get("x"), cmd.get("y")
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("mouse_move", x=x, y=y)
                             )
                         elif cmd_type == "scroll":
                             clicks = cmd.get("clicks", 0)
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             await loop.run_in_executor(
                                 None,
                                 lambda: self.automation.execute_command("scroll", clicks=clicks)

@@ -104,7 +104,7 @@ class AutomationWrapper:
             try:
                 # Execution Guard: basic environment check
                 if self.config.get("automation_mode") == "vnc":
-                    if not self.vnc or not self.vnc.client:
+                    if not self.vnc or not self.vnc.is_connected:
                         raise RuntimeError("VNC environment is not connected or active.")
                 else:
                     if not pyautogui:

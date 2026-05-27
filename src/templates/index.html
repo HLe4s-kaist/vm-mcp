@@ -589,7 +589,7 @@
 
             // pyautogui scroll parameter: positive for scrolling up, negative for scrolling down
             // wheel deltaY is positive when scrolling down, negative when scrolling up
-            const clicks = e.deltaY < 0 ? 100 : -100;
+            const clicks = e.deltaY < 0 ? 3 : -3;
             ws.send(JSON.stringify({
                 type: "scroll",
                 clicks: clicks

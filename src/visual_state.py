@@ -93,6 +93,9 @@ class VisualStateManager:
         with self.lock:
             buffered = io.BytesIO()
             if fmt.lower() == "jpeg" or fmt.lower() == "jpg":
+                # JPEG does not support RGBA mode (from VNC captures). Convert to RGB.
+                if img.mode == "RGBA":
+                    img = img.convert("RGB")
                 img.save(buffered, format="JPEG", quality=q)
             else:
                 img.save(buffered, format="PNG")
@@ -109,6 +112,9 @@ class VisualStateManager:
         
         buffered = io.BytesIO()
         if fmt.lower() == "jpeg" or fmt.lower() == "jpg":
+            # JPEG does not support RGBA mode (from VNC captures). Convert to RGB.
+            if img.mode == "RGBA":
+                img = img.convert("RGB")
             img.save(buffered, format="JPEG", quality=q)
         else:
             img.save(buffered, format="PNG")

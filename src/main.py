@@ -124,6 +124,10 @@ def main():
     parser.add_argument("--mcp-transport", choices=["stdio", "sse", "streamable-http"], help="MCP transport mode (stdio/sse/streamable-http)")
     parser.add_argument("--mcp-port", type=int, help="MCP SSE listener port (default: 8001)")
     parser.add_argument("--mcp-host", help="MCP SSE bind host (default: 0.0.0.0)")
+    parser.add_argument("--automation-mode", choices=["local", "vnc"], help="Automation mode: 'local' (Xvfb/PyAutoGUI) or 'vnc' (connect to existing VNC server)")
+    parser.add_argument("--vnc-host", help="VNC server host (default: 127.0.0.1)")
+    parser.add_argument("--vnc-port", type=int, help="VNC server port (default: 5900)")
+    parser.add_argument("--vnc-password", help="VNC server password (default: empty)")
     args = parser.parse_args()
 
     # Register exit handlers and signals
@@ -149,6 +153,16 @@ def main():
         config_manager.set("mcp.port", args.mcp_port, save=False)
     if args.mcp_host:
         config_manager.set("mcp.host", args.mcp_host, save=False)
+
+    # VNC CLI overrides
+    if args.automation_mode:
+        config_manager.set("automation_mode", args.automation_mode, save=False)
+    if args.vnc_host:
+        config_manager.set("vnc.host", args.vnc_host, save=False)
+    if args.vnc_port:
+        config_manager.set("vnc.port", args.vnc_port, save=False)
+    if args.vnc_password:
+        config_manager.set("vnc.password", args.vnc_password, save=False)
 
     # 2. Setup Virtual Framebuffer (Xvfb)
     setup_xvfb(config_manager)

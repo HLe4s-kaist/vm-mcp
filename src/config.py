@@ -25,7 +25,8 @@ DEFAULT_CONFIG = {
     "vnc": {
         "host": "127.0.0.1",
         "port": 5900,
-        "password": ""
+        "password": "",
+        "shared": True
     },
     "automation": {
         "fail_safe": True,
