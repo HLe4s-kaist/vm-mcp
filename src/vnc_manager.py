@@ -94,7 +94,7 @@ class VNCManager:
                                 img = Image.fromarray(pixels, 'RGBA').convert('RGB')
                                 with self.lock:
                                     self.latest_frame = img
-                            await asyncio.sleep(0.1)  # ~10 FPS max capture polling
+                            await asyncio.sleep(1.0 / 60.0)  # Up to 60 FPS capture polling
                         except asyncio.TimeoutError:
                             logging.warning("VNC screenshot timed out, retrying...")
                             continue

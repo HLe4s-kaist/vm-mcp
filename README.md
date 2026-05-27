@@ -35,7 +35,7 @@ sudo apt-get install -y xvfb xdotool scrot python3-tk python3-dev
 
 ### 2. 파이썬 의존성 패키지 설치
 ```bash
-pip install pyautogui pillow websockets mcp mss starlette uvicorn pyperclip python-xlib asyncvnc
+pip install pyautogui pillow websockets mcp mss starlette uvicorn pyperclip python-xlib asyncvnc numpy
 ```
 
 ### 3. 프로젝트 실행

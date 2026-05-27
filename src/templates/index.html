@@ -404,6 +404,8 @@
                         <option value="5" selected>5 FPS (권장)</option>
                         <option value="10">10 FPS</option>
                         <option value="15">15 FPS</option>
+                        <option value="30">30 FPS (VNC 전용)</option>
+                        <option value="60">60 FPS (VNC 전용)</option>
                     </select>
                 </div>
             </div>
@@ -700,11 +702,18 @@
 
         function updateFramerate() {
             const val = document.getElementById('fps-select').value;
+            const mode = document.getElementById('stat-engine').innerText.toLowerCase();
+            
+            if (parseInt(val) > 15 && mode !== 'vnc') {
+                alert("로컬 모드에서는 안정성을 위해 최대 15 FPS까지만 지원됩니다.");
+                document.getElementById('fps-select').value = "15";
+            }
+
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             
             ws.send(JSON.stringify({
                 type: "set_fps",
-                fps: parseInt(val)
+                fps: parseInt(document.getElementById('fps-select').value)
             }));
         }
 

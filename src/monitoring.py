@@ -207,7 +207,8 @@ class MonitoringBridge:
                             )
                         elif cmd_type == "set_fps":
                             new_fps = int(cmd.get("fps", 5))
-                            conn_fps = max(1, min(new_fps, 30))
+                            max_limit = 60 if self.config.get("automation_mode") == "vnc" else 15
+                            conn_fps = max(1, min(new_fps, max_limit))
                             logging.info(f"WebSocket client requested FPS change to {conn_fps}")
                             
                     except json.JSONDecodeError:
