@@ -15,6 +15,7 @@
 - [x] README.md 개선 및 영어 README.en.md 추가, AI 면책 조항 명시 (Task 17)
 - [x] 라이선스 파일 생성 및 GPLv2 라이선스 설정 (Task 17)
 - [x] 리팩토링 완료: VNC 지원, Windows 호환 및 스크린샷 파일 용량 관리 및 자동 로테이션 구현 (Task 18)
+- [x] VNC 기능 완전 수정 및 검증: asyncvnc API 호환성 수정, RGBA→RGB 변환, CLI 인수 추가, 종합 통합 테스트 작성 (Task 19)
 
 ## 설계 문서
 - [design/main.md](./design/main.md): 시스템 전체 설계 (Existing Tools를 활용한 MCP Wrapping 구조)
@@ -41,3 +42,4 @@
 - [tests/test_interaction.py](./tests/test_interaction.py): WebSocket을 통한 드래그/스크롤 마우스 인터랙션 이벤트 연동 통합 테스트
 - [tests/test_streamable_http.py](./tests/test_streamable_http.py): Streamable HTTP 원격 MCP 전송 및 도구 호출 통합 테스트
 - [tests/test_screenshot_storage.py](./tests/test_screenshot_storage.py): 스크린샷 저장소 용량 제한 및 로테이션 자동 삭제 통합 테스트
+- [tests/test_vnc_integration.py](./tests/test_vnc_integration.py): VNC 모드 종합 통합 테스트 (연결, 스크린샷, 마우스, 키보드, 웹 서버, MCP)
