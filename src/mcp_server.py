@@ -48,21 +48,15 @@ class MCPServer:
         @self.mcp.tool(name="screenshot")
         def screenshot(format_type: str = "png", quality: int = 80) -> str:
             """
-            Take a screenshot of the virtual monitor screen and return it as a Base64-encoded string.
+            Take a screenshot of the virtual monitor screen and return its realpath.
             format_type: 'png' or 'jpeg'
             quality: jpeg compression quality (1-100)
             """
             try:
-                base64_data = self.visual_state.get_screen_base64(
-                    format_type=format_type, quality=quality, force=True
-                )
-                try:
-                    self.visual_state.save_screenshot(format_type=format_type, quality=quality)
-                except Exception as ex:
-                    logging.error(f"Failed to save screenshot file to disk: {ex}")
-                return base64_data
-            except Exception as e:
-                return f"Error capturing screenshot: {str(e)}"
+                self.visual_state.save_screenshot(format_type=format_type, quality=quality)
+            except Exception as ex:
+                logging.error(f"Failed to save screenshot file to disk: {ex}")
+            return base64_data
 
         @self.mcp.tool(name="click")
         def click(x: float, y: float, button: str = "left", clicks: int = 1) -> str:
